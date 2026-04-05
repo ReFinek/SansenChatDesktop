@@ -1,0 +1,198 @@
+/* ===== КАСТОМНЫЙ ШРИФТ ===== */
+@font-face {
+    font-family: 'CustomFont';
+    src: url('font.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap; /* Улучшает производительность при загрузке */
+}
+
+/* ===== СБРОС И БАЗОВЫЕ СТИЛИ ===== */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    text-align: center;
+}
+
+body {
+    background-color: #000;
+    background-image: url("bg.png");
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #fff;
+    /* Кастомный шрифт + фоллбэки */
+    font-family: 'CustomFont', "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+}
+
+/* ===== НАВИГАЦИЯ ===== */
+.nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding: 14px 20px;
+    background: rgba(10, 10, 10, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: color 0.25s, background 0.25s;
+}
+
+.nav a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== КОНТЕЙНЕР ПРАВИЛ ===== */
+.rules {
+    max-width: 1000px;
+    margin: 0 auto; /* УБРАЛ 40px сверху - теперь стыкуется с навигацией */
+    padding: 48px 56px;
+    background: rgba(12, 12, 14, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: none; /* Убрал верхнюю границу */
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    text-align: left;
+}
+
+/* ===== ТИПОГРАФИКА ===== */
+.rules h1 {
+    font-size: 36px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 28px;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #ffffff, #b0b0b0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.rules h2 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-top: 48px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.rules h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 8px;
+    color: #e0e0e0;
+}
+
+.rules p {
+    margin-bottom: 14px;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+/* ===== СПЕЦИАЛЬНЫЕ ЭЛЕМЕНТЫ ===== */
+.intro {
+    font-size: 17px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.punishment {
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid rgba(255, 200, 60, 0.7);
+    border-right: 3px solid rgba(255, 200, 60, 0.7);
+    padding: 12px 18px;
+    margin: 16px 0 20px;
+    font-size: 15px;
+}
+
+.footer-note {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.motto {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 20px;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+section[id] {
+    scroll-margin-top: 90px;
+}
+.footer {
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 0;
+}
+
+.contacts {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+}
+
+.contact-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0);
+}
+
+.contact-nick {
+    color: rgba(255, 255, 255, 0.775);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    transition: color 0.25s;
+}
+
+.contact-nick:hover {
+    color: #fff;
+}

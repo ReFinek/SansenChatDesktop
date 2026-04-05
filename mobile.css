@@ -1,0 +1,102 @@
+/* ===== АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА ===== */
+
+@media screen and (max-width: 768px) {
+
+    /* Фон — bg.png корректно масштабируется на мобильных */
+    body {
+        background-attachment: scroll; /* на мобильных fixed работает плохо */
+        background-position: center center;
+    }
+
+    /* Навигация — компактная, в две строки при необходимости */
+    .nav {
+        gap: 6px 12px;
+        padding: 10px 12px;
+    }
+
+    .nav a {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+
+    /* Контейнер правил — на всю ширину с небольшими отступами */
+    .rules {
+        max-width: 100%;
+        margin: 20px 12px 0;
+        padding: 28px 20px;
+        border-radius: 12px;
+    }
+
+    /* Типографика — уменьшаем */
+    .rules h1 {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .rules h2 {
+        font-size: 21px;
+        margin-top: 36px;
+    }
+
+    .rules h3 {
+        font-size: 17px;
+        margin-top: 22px;
+    }
+
+    .rules p {
+        font-size: 15px;
+        line-height: 1.6;
+    }
+
+    .intro {
+        font-size: 15px;
+    }
+
+    .punishment {
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+
+    .motto {
+        font-size: 16px;
+    }
+}
+
+/* Для совсем маленьких экранов */
+@media screen and (max-width: 420px) {
+
+    .nav {
+        gap: 4px 8px;
+        padding: 8px 8px;
+    }
+
+    .nav a {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .rules {
+        margin: 14px 6px 0;
+        padding: 22px 14px;
+    }
+
+    .rules h1 {
+        font-size: 22px;
+    }
+
+    .rules h2 {
+        font-size: 19px;
+    }
+
+    .rules h3 {
+        font-size: 16px;
+    }
+
+    .rules p {
+        font-size: 14px;
+    }
+
+    .motto {
+        font-size: 15px;
+    }
+}

@@ -1,0 +1,69 @@
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ (до 768px) ===== */
+@media (max-width: 768px) {
+    /* ===== ФОН ===== */
+    body {
+        background-image: url("bgmobile.png");
+        background-size: cover;
+        background-position: center center;
+        background-attachment: fixed; /* Фон зафиксирован, не скроллится */
+    }
+
+    /* ===== НАВИГАЦИЯ ===== */
+    .nav {
+        padding: 10px 12px;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .nav a {
+        font-size: 13px;
+        padding: 12px 14px; /* Увеличена зона нажатия для пальцев */
+        border-radius: 8px;
+        min-height: 44px; /* Стандартный безопасный тач-таргет */
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* ===== КОНТЕЙНЕР ПРАВИЛ ===== */
+    .rules {
+        max-width: 100%;
+        margin: 0;
+        padding: 24px 16px;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        background: rgba(12, 12, 14, 0.92); /* Чуть плотнее для читаемости на мелких экранах */
+    }
+
+    /* ===== ТИПОГРАФИКА ===== */
+    .rules h1 { font-size: 26px; margin-bottom: 20px; }
+    .rules h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; padding-bottom: 6px; }
+    .rules h3 { font-size: 17px; margin-top: 22px; margin-bottom: 6px; }
+    .rules p { font-size: 15px; margin-bottom: 12px; line-height: 1.6; }
+    .intro { font-size: 15px; margin-bottom: 20px; }
+    .punishment { padding: 10px 14px; font-size: 14px; margin: 12px 0 16px; }
+    .footer-note { margin-top: 32px; padding-top: 16px; }
+    .motto { font-size: 16px; margin-top: 16px; }
+
+    /* Скролл к якорям (учитывает уменьшенную высоту навигации) */
+    section[id] { scroll-margin-top: 70px; }
+
+    /* ===== ФУТЕР И КОНТАКТЫ ===== */
+    .footer { padding: 24px 0; }
+    .contacts {
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        padding: 0 8px;
+    }
+    .contact-item {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04); /* Лёгкая подложка для визуального разделения */
+        box-sizing: border-box;
+    }
+    .contact-avatar { width: 44px; height: 44px; }
+    .contact-nick { font-size: 15px; }
+}

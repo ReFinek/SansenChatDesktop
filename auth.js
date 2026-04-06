@@ -1,290 +1,285 @@
-console.log('%c🚀 [AUTH.JS] Скрипт загружен', 'color: #00ff00; font-weight: bold; background: #222; padding: 4px 8px; border-radius: 4px;');
-
-// ===== НАСТРОЙКИ SUPABASE =====
+// ===== КОНФИГУРАЦИЯ SUPABASE =====
 const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
 
-let supabase;
-try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ [AUTH.JS] Supabase клиент инициализирован');
-} catch (err) {
-    console.error('❌ [AUTH.JS] Ошибка инициализации Supabase:', err);
+// Инициализация клиента
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+console.log('✅ Supabase клиент создан');
+
+// Элементы DOM (заполнятся после загрузки)
+let authBtn, authModal, closeModal, loginForm, signupForm, tabBtns, authMessage, userPanel, userNameDisplay, logoutBtn;
+
+// Вспомогательные функции
+function showMessage(text, type) {
+    if (!authMessage) return;
+    authMessage.textContent = text;
+    authMessage.className = `auth-message show ${type}`;
+    console.log(`💬 [${type}] ${text}`);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 [AUTH.JS] DOMContentLoaded сработал');
+function hideMessage() {
+    if (authMessage) authMessage.className = 'auth-message';
+}
 
-    // 1. Поиск элементов
-    const authBtn = document.getElementById('authBtn');
-    const authModal = document.getElementById('authModal');
-    const closeModal = document.getElementById('closeModal');
-    const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const authMessage = document.getElementById('authMessage');
-    const userPanel = document.getElementById('userPanel');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    console.log('🔍 [AUTH.JS] Поиск DOM-элементов:', {
-        authBtn: !!authBtn,
-        authModal: !!authModal,
-        closeModal: !!closeModal,
-        loginForm: !!loginForm,
-        signupForm: !!signupForm,
-        tabBtns: tabBtns.length
-    });
-
-    if (!authBtn || !authModal) {
-        console.error('❌ [AUTH.JS] FATAL: Кнопка или модальное окно не найдены! Проверь HTML.');
-        return;
-    }
-
-    console.log('✅ [AUTH.JS] Все критические элементы найдены');
-
-    // 2. Проверка сессии при загрузке
-    checkSession();
-
-    // 3. Логика модального окна (с максимальной отладкой)
-    authBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('🔘 [AUTH.JS] КЛИК по кнопке "Войти"');
-        console.log('📦 [AUTH.JS] authModal до открытия:', authModal);
-        console.log('👀 [AUTH.JS] authModal.hidden:', authModal.hidden);
-        console.log('🎨 [AUTH.JS] authModal.style.display:', window.getComputedStyle(authModal).display);
-
-        authModal.hidden = false;
-        authModal.style.display = 'flex'; // Принудительно на случай CSS-конфликтов
-        document.body.style.overflow = 'hidden';
-        
-        console.log('🔓 [AUTH.JS] Модальное окно должно быть открыто. Проверь визуально и консоль.');
-    });
-
-    if (closeModal) {
-        closeModal.addEventListener('click', () => closeModalHandler());
-    }
-
+function closeModalHandler() {
     if (authModal) {
-        authModal.addEventListener('click', (e) => {
-            if (e.target === authModal) {
-                console.log('👆 [AUTH.JS] Клик по фону -> закрытие');
-                closeModalHandler();
-            }
-        });
+        authModal.hidden = true;
+        authModal.style.display = 'none';
     }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && authModal && !authModal.hidden) {
-            console.log('⌨️ [AUTH.JS] Escape -> закрытие');
-            closeModalHandler();
-        }
-    });
-
-    function closeModalHandler() {
-        if (authModal) {
-            authModal.hidden = true;
-            authModal.style.display = 'none';
-        }
-        document.body.style.overflow = '';
-        hideMessage();
-        console.log('❌ [AUTH.JS] Модальное окно закрыто');
-    }
-
-    // 4. Переключение вкладок
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            if (btn.dataset.tab === 'login') {
-                loginForm.hidden = false;
-                signupForm.hidden = true;
-                console.log('🔄 [AUTH.JS] Вкладка: Вход');
-            } else {
-                loginForm.hidden = true;
-                signupForm.hidden = false;
-                console.log('🔄 [AUTH.JS] Вкладка: Регистрация');
-            }
-            hideMessage();
-        });
-    });
-
-    // 5. Форма регистрации
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('📝 [AUTH.JS] Отправка формы регистрации...');
-            hideMessage();
-            
-            const username = document.getElementById('signupUsername').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-            
-            console.log('📤 [AUTH.JS] Данные:', { username, email: email ? 'указан' : 'авто', passwordLength: password.length });
-
-            if (password.length < 6) {
-                showMessage('Пароль должен содержать минимум 6 символов', 'error');
-                console.warn('⚠️ [AUTH.JS] Пароль слишком короткий');
-                return;
-            }
-            if (username.length < 3) {
-                showMessage('Логин должен содержать минимум 3 символа', 'error');
-                return;
-            }
-
-            try {
-                const finalEmail = email || `${username}@chat.placeholder`;
-                console.log('🌐 [AUTH.JS] Запрос к Supabase signUp...');
-                
-                const {  { session }, error } = await supabase.auth.signUp({
-                    email: finalEmail,
-                    password: password,
-                    options: { data: { username } }
-                });
-
-                if (error) throw error;
-                
-                console.log('✅ [AUTH.JS] Регистрация успешна:', session ? 'с сессией' : 'требует подтверждения');
-                showMessage('✅ Регистрация успешна! Проверьте почту или войдите.', 'success');
-                signupForm.reset();
-                
-                setTimeout(() => {
-                    if (tabBtns[0]) tabBtns[0].click();
-                }, 1500);
-            } catch (err) {
-                console.error('❌ [AUTH.JS] Ошибка регистрации:', err);
-                showMessage('❌ ' + (err.message || 'Ошибка регистрации'), 'error');
-            }
-        });
-    }
-
-    // 6. Форма входа
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('🔑 [AUTH.JS] Отправка формы входа...');
-            hideMessage();
-            
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            console.log('📤 [AUTH.JS] Данные входа:', { username });
-
-            try {
-                const email = username.includes('@') ? username : `${username}@chat.placeholder`;
-                console.log('🌐 [AUTH.JS] Запрос к Supabase signIn...');
-                
-                const {  { session }, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (error) {
-                    if (error.message.includes('Invalid login credentials') || error.message.includes('Email not confirmed')) {
-                        throw new Error('Неверный логин или пароль');
-                    }
-                    throw error;
-                }
-                
-                console.log('✅ [AUTH.JS] Вход успешен:', session?.user?.email || session?.user?.user_metadata?.username);
-                showMessage('✅ Добро пожаловать!', 'success');
-                loginForm.reset();
-            } catch (err) {
-                console.error('❌ [AUTH.JS] Ошибка входа:', err);
-                showMessage('❌ ' + (err.message || 'Ошибка входа'), 'error');
-            }
-        });
-    }
-
-    // 7. Выход
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            console.log('🚪 [AUTH.JS] Запрос выхода...');
-            try {
-                await supabase.auth.signOut();
-                console.log('✅ [AUTH.JS] Выход выполнен');
-                showMessage('✅ Вы вышли из аккаунта', 'success');
-                setTimeout(closeModalHandler, 1000);
-            } catch (err) {
-                console.error('❌ [AUTH.JS] Ошибка выхода:', err);
-                showMessage('❌ Ошибка выхода', 'error');
-            }
-        });
-    }
-});
-
-// ===== ПРОВЕРКА СЕССИИ =====
-async function checkSession() {
-    try {
-        const {  { session } } = await supabase.auth.getSession();
-        handleAuthState(session?.user ?? null);
-        console.log('🔍 [AUTH.JS] Сессия при загрузке:', session ? 'активна' : 'нет');
-    } catch (err) {
-        console.error('❌ [AUTH.JS] Ошибка проверки сессии:', err);
-    }
+    document.body.style.overflow = '';
+    hideMessage();
+    // Сброс форм и активной вкладки
+    if (loginForm) loginForm.reset();
+    if (signupForm) signupForm.reset();
+    const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
+    if (loginTab) loginTab.click();
+    console.log('❌ Модальное окно закрыто');
 }
 
-// Слушатель изменения состояния Auth
-if (supabase) {
-    supabase.auth.onAuthStateChange((event, session) => {
-        console.log('🔄 [AUTH.JS] onAuthStateChange:', event, session?.user?.email || session?.user?.user_metadata?.username);
-        handleAuthState(session?.user ?? null);
-    });
-}
-
-// ===== ОБНОВЛЕНИЕ UI =====
-function handleAuthState(user) {
-    const authBtn = document.getElementById('authBtn');
-    const userPanel = document.getElementById('userPanel');
-    const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const tabs = document.querySelector('.modal-tabs');
-
+// Обновление UI в зависимости от пользователя
+async function updateUI(user) {
+    const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Гость';
+    
     if (user) {
-        const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Пользователь';
-        if (userNameDisplay) userNameDisplay.textContent = username;
+        // Авторизован
         if (authBtn) {
             authBtn.textContent = username;
             authBtn.classList.add('logged-in');
         }
         if (userPanel) userPanel.hidden = false;
+        if (userNameDisplay) userNameDisplay.textContent = username;
         if (loginForm) loginForm.hidden = true;
         if (signupForm) signupForm.hidden = true;
+        const tabs = document.querySelector('.modal-tabs');
         if (tabs) tabs.hidden = true;
-        console.log('👤 [AUTH.JS] UI обновлён: авторизован как', username);
+        
+        // Сохраняем в localStorage для быстрого доступа (дублируем)
+        localStorage.setItem('chat_user', JSON.stringify({
+            id: user.id,
+            username: username,
+            avatar: user.user_metadata?.avatar_url
+        }));
+        console.log('👤 UI обновлён: пользователь', username);
     } else {
+        // Не авторизован
         if (authBtn) {
             authBtn.textContent = 'Войти';
             authBtn.classList.remove('logged-in');
         }
         if (userPanel) userPanel.hidden = true;
         if (loginForm) loginForm.hidden = false;
+        if (signupForm) signupForm.hidden = true;
+        const tabs = document.querySelector('.modal-tabs');
         if (tabs) tabs.hidden = false;
-        console.log('👤 [AUTH.JS] UI обновлён: не авторизован');
-    }
-
-    if (user) {
-        localStorage.setItem('chat_user', JSON.stringify({
-            id: user.id,
-            username: user.user_metadata?.username || user.email,
-            avatar: user.user_metadata?.avatar_url
-        }));
-    } else {
+        
         localStorage.removeItem('chat_user');
+        console.log('👤 UI обновлён: не авторизован');
     }
 }
 
-// ===== УТИЛИТЫ =====
-function showMessage(text, type) {
-    const el = document.getElementById('authMessage');
-    if (!el) return;
-    el.textContent = text;
-    el.className = `auth-message show ${type}`;
-    console.log(`💬 [AUTH.JS] Сообщение: ${type} | ${text}`);
+// Проверка текущей сессии при загрузке
+async function checkSession() {
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        await updateUI(session?.user || null);
+        console.log('🔍 Сессия при загрузке:', session ? 'активна' : 'отсутствует');
+    } catch (err) {
+        console.error('❌ Ошибка проверки сессии:', err);
+        await updateUI(null);
+    }
 }
 
-function hideMessage() {
-    const el = document.getElementById('authMessage');
-    if (el) el.className = 'auth-message';
+// Обработчик изменения состояния авторизации (привязываем один раз)
+function initAuthListener() {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('🔄 onAuthStateChange:', event, session?.user?.email);
+        await updateUI(session?.user || null);
+        
+        // Автоматически закрываем модалку при успешном входе/регистрации
+        if (event === 'SIGNED_IN' || event === 'SIGNED_UP') {
+            closeModalHandler();
+            showMessage('✅ Добро пожаловать!', 'success');
+        }
+        if (event === 'SIGNED_OUT') {
+            showMessage('✅ Вы вышли из аккаунта', 'success');
+        }
+    });
 }
+
+// Регистрация
+async function handleSignup(e) {
+    e.preventDefault();
+    hideMessage();
+    
+    const username = document.getElementById('signupUsername').value.trim();
+    const emailRaw = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    
+    if (username.length < 3) {
+        showMessage('Логин должен содержать минимум 3 символа', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        showMessage('Пароль должен содержать минимум 6 символов', 'error');
+        return;
+    }
+    
+    // Если email не указан, генерируем псевдо-email
+    const email = emailRaw || `${username}@chat.placeholder`;
+    
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: { username: username }
+            }
+        });
+        
+        if (error) throw error;
+        
+        console.log('✅ Регистрация успешна:', data.user);
+        showMessage('✅ Регистрация успешна! Теперь войдите.', 'success');
+        document.getElementById('signupForm').reset();
+        
+        // Переключаем на вкладку "Вход"
+        const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
+        if (loginTab) loginTab.click();
+        
+        // Автоматически заполняем логин (если email был указан, то им, иначе логином)
+        const loginInput = document.getElementById('loginUsername');
+        if (loginInput) loginInput.value = emailRaw || username;
+        
+    } catch (err) {
+        console.error('❌ Ошибка регистрации:', err);
+        let msg = err.message;
+        if (msg.includes('User already registered')) msg = 'Пользователь с таким email уже существует';
+        if (msg.includes('Password should be at least 6 characters')) msg = 'Пароль минимум 6 символов';
+        showMessage('❌ ' + msg, 'error');
+    }
+}
+
+// Вход
+async function handleLogin(e) {
+    e.preventDefault();
+    hideMessage();
+    
+    const loginInput = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!loginInput || !password) {
+        showMessage('Заполните оба поля', 'error');
+        return;
+    }
+    
+    // Определяем, email это или логин
+    const email = loginInput.includes('@') ? loginInput : `${loginInput}@chat.placeholder`;
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) throw error;
+        
+        console.log('✅ Вход выполнен:', data.user);
+        showMessage('✅ Добро пожаловать!', 'success');
+        document.getElementById('loginForm').reset();
+        // Модалка закроется автоматически через onAuthStateChange
+        
+    } catch (err) {
+        console.error('❌ Ошибка входа:', err);
+        let msg = err.message;
+        if (msg.includes('Invalid login credentials')) msg = 'Неверный логин или пароль';
+        if (msg.includes('Email not confirmed')) msg = 'Подтвердите email (проверьте почту)';
+        showMessage('❌ ' + msg, 'error');
+    }
+}
+
+// Выход
+async function handleLogout() {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        console.log('✅ Выход выполнен');
+        closeModalHandler();
+    } catch (err) {
+        console.error('❌ Ошибка выхода:', err);
+        showMessage('❌ Ошибка выхода', 'error');
+    }
+}
+
+// Настройка обработчиков после загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM загружен, инициализация auth...');
+    
+    // Получаем элементы
+    authBtn = document.getElementById('authBtn');
+    authModal = document.getElementById('authModal');
+    closeModal = document.getElementById('closeModal');
+    loginForm = document.getElementById('loginForm');
+    signupForm = document.getElementById('signupForm');
+    tabBtns = document.querySelectorAll('.tab-btn');
+    authMessage = document.getElementById('authMessage');
+    userPanel = document.getElementById('userPanel');
+    userNameDisplay = document.getElementById('userNameDisplay');
+    logoutBtn = document.getElementById('logoutBtn');
+    
+    if (!authBtn || !authModal) {
+        console.error('❌ Критические элементы не найдены! Проверьте HTML.');
+        return;
+    }
+    
+    // 1. Проверка сессии
+    checkSession();
+    
+    // 2. Слушатель изменений авторизации
+    initAuthListener();
+    
+    // 3. Открытие модального окна
+    authBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('🔘 Клик по кнопке "Войти"');
+        authModal.hidden = false;
+        authModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        hideMessage();
+        // Сбрасываем активную вкладку на "Вход"
+        const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
+        if (loginTab) loginTab.click();
+    });
+    
+    // 4. Закрытие модалки
+    if (closeModal) {
+        closeModal.addEventListener('click', closeModalHandler);
+    }
+    if (authModal) {
+        authModal.addEventListener('click', (e) => {
+            if (e.target === authModal) closeModalHandler();
+        });
+    }
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && authModal && !authModal.hidden) closeModalHandler();
+    });
+    
+    // 5. Переключение вкладок
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const isLogin = btn.dataset.tab === 'login';
+            if (loginForm) loginForm.hidden = !isLogin;
+            if (signupForm) signupForm.hidden = isLogin;
+            hideMessage();
+        });
+    });
+    
+    // 6. Отправка форм
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (signupForm) signupForm.addEventListener('submit', handleSignup);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    
+    console.log('✅ Все обработчики событий установлены');
+});

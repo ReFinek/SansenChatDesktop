@@ -41,6 +41,7 @@ body {
     top: 0;
     z-index: 100;
     display: flex;
+    align-items: center;
     justify-content: center;
     flex-wrap: wrap;
     gap: 8px 24px;
@@ -49,7 +50,14 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    align-items: center;
+    position: relative;
+}
+
+.nav-links {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .nav a {
@@ -68,35 +76,33 @@ body {
     background: rgba(255, 255, 255, 0.1);
 }
 
-/* ===== КНОПКА АВТОРИЗАЦИИ ===== */
-.auth-btn {
-    margin-left: auto;
-    padding: 8px 20px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
+/* ===== КНОПКА АВТОРИЗАЦИИ (в стиле навигации) ===== */
+#authBtn {
+    position: absolute;
+    right: 20px;
+    padding: 6px 12px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 14px;
     font-weight: 600;
+    letter-spacing: 0.3px;
     cursor: pointer;
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    transition: color 0.25s, background 0.25s;
 }
 
-.auth-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-}
-
-.auth-btn:active {
-    transform: translateY(0);
-}
-
-.auth-btn.logged-in {
+#authBtn:hover {
+    color: #fff;
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#authBtn.logged-in {
+    color: #8b5cf6;
+}
+
+#authBtn.logged-in:hover {
+    background: rgba(139, 92, 246, 0.15);
 }
 
 /* ===== КОНТЕЙНЕР ПРАВИЛ ===== */

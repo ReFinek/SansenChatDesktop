@@ -2,7 +2,9 @@
 const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ===== ИНИЦИАЛИЗАЦИЯ SUPABASE (защита от повторного объявления) =====
+const supabase = window.supabaseClient || 
+    (window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
 
 // ===== DOM ЭЛЕМЕНТЫ =====
 const authBtn = document.getElementById('authBtn');
@@ -22,7 +24,7 @@ let currentUser = null;
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 document.addEventListener('DOMContentLoaded', async () => {
     // Проверка сохранённой сессии
-    const { data: { session } } = await supabase.auth.getSession();
+    const {  { session } } = await supabase.auth.getSession();
     handleAuthState(session?.user ?? null);
     
     // Подписка на изменения авторизации
@@ -67,15 +69,22 @@ function handleAuthState(user) {
 }
 
 // ===== МОДАЛЬНОЕ ОКНО =====
-authBtn.addEventListener('click', () => {
-    authModal.hidden = false;
-    document.body.style.overflow = 'hidden';
-});
+if (authBtn) {
+    authBtn.addEventListener('click', () => {
+        authModal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    });
+}
 
-closeModal.addEventListener('click', closeModalHandler);
-authModal.addEventListener('click', (e) => {
-    if (e.target === authModal) closeModalHandler();
-});
+if (closeModal) {
+    closeModal.addEventListener('click', closeModalHandler);
+}
+
+if (authModal) {
+    authModal.addEventListener('click', (e) => {
+        if (e.target === authModal) closeModalHandler();
+    });
+}
 
 function closeModalHandler() {
     authModal.hidden = true;
@@ -108,100 +117,106 @@ tabBtns.forEach(btn => {
 });
 
 // ===== РЕГИСТРАЦИЯ =====
-signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideMessage();
-    
-    const username = document.getElementById('signupUsername').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
-    const password = document.getElementById('signupPassword').value;
-    
-    if (password.length < 6) {
-        showMessage('Пароль должен содержать минимум 6 символов', 'error');
-        return;
-    }
-    
-    if (username.length < 3) {
-        showMessage('Логин должен содержать минимум 3 символа', 'error');
-        return;
-    }
-    
-    try {
-        // Supabase требует email, генерируем заглушку если не указан
-        const finalEmail = email || `${username}@chat.placeholder`;
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMessage();
         
-        const { data, error } = await supabase.auth.signUp({
-            email: finalEmail,
-            password: password,
-            options: {
-                data: { username: username }
-            }
-        });
+        const username = document.getElementById('signupUsername').value.trim();
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
         
-        if (error) throw error;
-        
-        showMessage('✅ Регистрация успешна! Теперь вы можете войти.', 'success');
-        signupForm.reset();
-        
-        setTimeout(() => {
-            tabBtns[0].click();
-        }, 1500);
-        
-    } catch (err) {
-        showMessage('❌ ' + (err.message || 'Ошибка регистрации'), 'error');
-    }
-});
-
-// ===== ВХОД =====
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideMessage();
-    
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    
-    try {
-        // Пытаемся войти: если введён email — используем его, иначе генерируем
-        const email = username.includes('@') ? username : `${username}@chat.placeholder`;
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-        
-        if (error) {
-            if (error.message.includes('Invalid login credentials') || 
-                error.message.includes('Email not confirmed')) {
-                throw new Error('Неверный логин или пароль');
-            }
-            throw error;
+        if (password.length < 6) {
+            showMessage('Пароль должен содержать минимум 6 символов', 'error');
+            return;
         }
         
-        showMessage('✅ Добро пожаловать!', 'success');
-        loginForm.reset();
+        if (username.length < 3) {
+            showMessage('Логин должен содержать минимум 3 символа', 'error');
+            return;
+        }
         
-    } catch (err) {
-        showMessage('❌ ' + (err.message || 'Ошибка входа'), 'error');
-    }
-});
+        try {
+            const finalEmail = email || `${username}@chat.placeholder`;
+            
+            const { data, error } = await supabase.auth.signUp({
+                email: finalEmail,
+                password: password,
+                options: {
+                    data: { username: username }
+                }
+            });
+            
+            if (error) throw error;
+            
+            showMessage('✅ Регистрация успешна! Теперь вы можете войти.', 'success');
+            signupForm.reset();
+            
+            setTimeout(() => {
+                tabBtns[0]?.click();
+            }, 1500);
+            
+        } catch (err) {
+            showMessage('❌ ' + (err.message || 'Ошибка регистрации'), 'error');
+        }
+    });
+}
+
+// ===== ВХОД =====
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideMessage();
+        
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        
+        try {
+            const email = username.includes('@') ? username : `${username}@chat.placeholder`;
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) {
+                if (error.message.includes('Invalid login credentials') || 
+                    error.message.includes('Email not confirmed')) {
+                    throw new Error('Неверный логин или пароль');
+                }
+                throw error;
+            }
+            
+            showMessage('✅ Добро пожаловать!', 'success');
+            loginForm.reset();
+            
+        } catch (err) {
+            showMessage('❌ ' + (err.message || 'Ошибка входа'), 'error');
+        }
+    });
+}
 
 // ===== ВЫХОД =====
-logoutBtn.addEventListener('click', async () => {
-    try {
-        await supabase.auth.signOut();
-        showMessage('✅ Вы вышли из аккаунта', 'success');
-        setTimeout(closeModalHandler, 1000);
-    } catch (err) {
-        showMessage('❌ Ошибка выхода', 'error');
-    }
-});
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            await supabase.auth.signOut();
+            showMessage('✅ Вы вышли из аккаунта', 'success');
+            setTimeout(closeModalHandler, 1000);
+        } catch (err) {
+            showMessage('❌ Ошибка выхода', 'error');
+        }
+    });
+}
 
 // ===== УТИЛИТЫ =====
 function showMessage(text, type) {
+    if (!authMessage) return;
     authMessage.textContent = text;
     authMessage.className = `auth-message show ${type}`;
 }
 
 function hideMessage() {
+    if (!authMessage) return;
     authMessage.className = 'auth-message';
 }

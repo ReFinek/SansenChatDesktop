@@ -1,14 +1,14 @@
 (function() {
-    // ===== КОНФИГУРАЦИЯ SUPABASE =====
+    // ===== КОНФИГ =====
     const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
     
-    let _supabase = null;
+    let supabaseClient = null;
     
     // DOM элементы
     let authBtn, authModal, closeModalBtn, loginContainer, signupContainer, loginForm, signupForm;
     let loginUsername, loginPassword, signupUsername, signupEmail, signupPassword, signupPasswordConfirm;
-    let authMessage, userPanel, userNameDisplay, logoutBtn;
+    let authMessage, userPanel, userNameDisplay, logoutBtn, userAvatar;
     let switchToSignup, switchToLogin;
     
     function showMessage(text, type) {
@@ -49,11 +49,46 @@
         }
     }
     
+    // Получение username из таблицы profiles по user.id
+    async function fetchUsername(userId) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('username')
+                .eq('id', userId)
+                .single();
+            if (error) throw error;
+            return data?.username || null;
+        } catch (err) {
+            console.warn('Не удалось получить username из profiles:', err);
+            return null;
+        }
+    }
+    
     async function updateUI(user) {
-        const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'Гость';
         if (user) {
+            // Пытаемся получить username из profiles (там хранится кастомный логин)
+            let username = user.user_metadata?.username;
+            if (!username) {
+                const fetched = await fetchUsername(user.id);
+                if (fetched) username = fetched;
+            }
+            if (!username) username = user.email?.split('@')[0] || 'Гость';
+            
+            // Обновляем кнопку: показываем аватар-кружок и имя
             if (authBtn) {
-                authBtn.textContent = username;
+                // Очищаем содержимое кнопки
+                authBtn.innerHTML = '';
+                // Создаём кружок с первой буквой
+                const avatarSpan = document.createElement('span');
+                avatarSpan.className = 'user-avatar-circle';
+                avatarSpan.textContent = username.charAt(0).toUpperCase();
+                // Создаём текст с именем
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'user-name-text';
+                nameSpan.textContent = username;
+                authBtn.appendChild(avatarSpan);
+                authBtn.appendChild(nameSpan);
                 authBtn.classList.add('logged-in');
             }
             if (userPanel) userPanel.hidden = false;
@@ -63,7 +98,7 @@
             localStorage.setItem('chat_user', JSON.stringify({ id: user.id, username }));
         } else {
             if (authBtn) {
-                authBtn.textContent = 'Войти';
+                authBtn.innerHTML = 'Войти';
                 authBtn.classList.remove('logged-in');
             }
             if (userPanel) userPanel.hidden = true;
@@ -87,13 +122,16 @@
         
         const email = emailRaw || `${username}@chat.placeholder`;
         try {
-            const { data, error } = await _supabase.auth.signUp({
+            // Регистрация через Supabase auth (триггер сам создаст профиль)
+            const { data, error } = await supabaseClient.auth.signUp({
                 email, password,
-                options: { data: { username } }
+                options: { data: { username } } // username попадёт в raw_user_meta_data, а триггер создаст профиль
             });
             if (error) throw error;
+            
             showMessage('✅ Регистрация успешна! Теперь войдите.', 'success');
             signupForm.reset();
+            // Переключаем на форму входа
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
             if (loginUsername) loginUsername.value = emailRaw || username;
@@ -112,11 +150,11 @@
         if (!loginValue || !password) return showMessage('Заполните оба поля', 'error');
         const email = loginValue.includes('@') ? loginValue : `${loginValue}@chat.placeholder`;
         try {
-            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             if (error) throw error;
             showMessage('✅ Добро пожаловать!', 'success');
             loginForm.reset();
-            closeModal();
+            closeModal(); // закрываем модалку после успешного входа
         } catch (err) {
             let msg = err.message;
             if (msg.includes('Invalid login credentials')) msg = 'Неверный логин или пароль';
@@ -125,20 +163,20 @@
     }
     
     async function handleLogout() {
-        await _supabase.auth.signOut();
+        await supabaseClient.auth.signOut();
         closeModal();
     }
     
-    async function initAuth() {
+    async function initSupabase() {
         if (!window.supabase) {
-            console.error('❌ Supabase библиотека не загружена');
+            console.error('❌ Библиотека Supabase не загружена');
             return false;
         }
-        _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase инициализирован');
-        const { data: { session } } = await _supabase.auth.getSession();
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase клиент создан');
+        const { data: { session } } = await supabaseClient.auth.getSession();
         await updateUI(session?.user || null);
-        _supabase.auth.onAuthStateChange(async (event, session) => {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
             await updateUI(session?.user || null);
             if (event === 'SIGNED_IN') closeModal();
         });
@@ -168,25 +206,24 @@
         switchToLogin = document.getElementById('switchToLogin');
         
         if (!authBtn || !authModal) {
-            console.error('❌ Кнопка или модалка не найдены');
+            console.error('❌ Кнопка или модальное окно не найдены');
             return;
         }
         
-        await initAuth();
+        await initSupabase();
         
         // Открытие модалки
         authBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            console.log('🔘 Кнопка "Войти" нажата, открываем модалку');
+            console.log('🔘 Нажата кнопка Войти');
             openModal();
         });
         
-        // Закрытие
+        // Закрытие ТОЛЬКО по крестику (убираем клик по фону и Escape)
         if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-        if (authModal) authModal.addEventListener('click', (e) => { if (e.target === authModal) closeModal(); });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && authModal && !authModal.hidden) closeModal(); });
+        // Больше никаких обработчиков закрытия по фону и Escape
         
-        // Переключение между формами
+        // Переключение форм
         if (switchToSignup) {
             switchToSignup.addEventListener('click', () => {
                 loginContainer.hidden = true;
@@ -209,6 +246,6 @@
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
         
-        console.log('✅ auth.js полностью загружен и настроен');
+        console.log('✅ auth.js полностью загружен, обработчики навешаны');
     });
 })();

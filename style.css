@@ -395,3 +395,41 @@ section[id] {
     background: rgba(239, 68, 68, 0.4);
     color: #fff;
 }
+/* ===== АВАТАР И ИМЯ В КНОПКЕ ===== */
+#authBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.user-avatar-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.user-name-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+}
+
+#authBtn.logged-in:hover .user-name-text {
+    color: #fff;
+}
+
+#authBtn.logged-in:hover .user-avatar-circle {
+    background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+    transform: scale(1.05);
+}

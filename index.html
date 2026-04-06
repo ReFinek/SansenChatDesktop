@@ -226,41 +226,44 @@
         </div>
     </footer>
 
-    <!-- ===== МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ ===== -->
-    <div id="authModal" class="modal-overlay" hidden>
-        <div class="modal-container">
-            <button id="closeModal" class="modal-close">&times;</button>
-            
-            <div class="modal-tabs">
-                <button class="tab-btn active" data-tab="login">Войти</button>
-                <button class="tab-btn" data-tab="signup">Регистрация</button>
-            </div>
-            
-            <!-- Форма входа -->
+<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+<div id="authModal" class="modal-overlay" hidden>
+    <div class="modal-container">
+        <button id="closeModalBtn" class="modal-close">&times;</button>
+        
+        <!-- Форма входа -->
+        <div id="loginFormContainer">
+            <h2 class="modal-title">Авторизация</h2>
             <form id="loginForm" class="auth-form">
-                <input type="text" id="loginUsername" placeholder="Логин*" required autocomplete="username">
-                <input type="password" id="loginPassword" placeholder="Пароль*" required autocomplete="current-password">
-                <button type="submit" class="submit-btn">Войти</button>
+                <input type="text" id="loginUsername" placeholder="Логин или email" required autocomplete="username">
+                <input type="password" id="loginPassword" placeholder="Пароль" required autocomplete="current-password">
+                <button type="submit" class="auth-submit-btn">Войти</button>
             </form>
-            
-            <!-- Форма регистрации -->
-            <form id="signupForm" class="auth-form" hidden>
-                <input type="text" id="signupUsername" placeholder="Логин*" required autocomplete="username">
-                <input type="email" id="signupEmail" placeholder="Email (по желанию)" autocomplete="email">
-                <input type="password" id="signupPassword" placeholder="Пароль* (мин. 6 символов)" required minlength="6" autocomplete="new-password">
-                <button type="submit" class="submit-btn">Зарегистрироваться</button>
+            <p class="auth-switch">Нет аккаунта? <span id="switchToSignup" class="auth-switch-link">Зарегистрироваться</span></p>
+        </div>
+        
+        <!-- Форма регистрации (скрыта по умолчанию) -->
+        <div id="signupFormContainer" hidden>
+            <h2 class="modal-title">Регистрация</h2>
+            <form id="signupForm" class="auth-form">
+                <input type="text" id="signupUsername" placeholder="Логин" required autocomplete="username">
+                <input type="email" id="signupEmail" placeholder="Email (необязательно)" autocomplete="email">
+                <input type="password" id="signupPassword" placeholder="Пароль (мин. 6 символов)" required minlength="6">
+                <input type="password" id="signupPasswordConfirm" placeholder="Подтвердите пароль" required>
+                <button type="submit" class="auth-submit-btn">Зарегистрироваться</button>
             </form>
-            
-            <div id="authMessage" class="auth-message"></div>
-            
-            <!-- Блок авторизованного пользователя -->
-            <div id="userPanel" class="user-panel" hidden>
-                <p>Вы вошли как: <strong id="userNameDisplay"></strong></p>
-                <button id="logoutBtn" class="logout-btn">Выйти</button>
-            </div>
+            <p class="auth-switch">Уже есть аккаунт? <span id="switchToLogin" class="auth-switch-link">Войти</span></p>
+        </div>
+        
+        <div id="authMessage" class="auth-message"></div>
+        
+        <!-- Блок авторизованного пользователя -->
+        <div id="userPanel" class="user-panel" hidden>
+            <p>Вы вошли как: <strong id="userNameDisplay"></strong></p>
+            <button id="logoutBtn" class="logout-btn">Выйти</button>
         </div>
     </div>
-
+</div>
     <!-- Скрипт авторизации -->
     <script src="auth.js"></script>
 </body>

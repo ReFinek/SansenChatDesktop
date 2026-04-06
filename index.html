@@ -274,6 +274,25 @@
         </div>
     </div>
 </div>
+<!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
+<div id="profileModal" class="modal-overlay" hidden>
+    <div class="modal-container">
+        <button id="closeProfileModal" class="modal-close">&times;</button>
+        <h2 class="modal-title">Личный кабинет</h2>
+        <div class="avatar-uploader">
+            <div id="profileAvatarPreview" class="avatar-circle-preview">?</div>
+            <div class="avatar-hover-icon"><i class="fas fa-camera"></i></div>
+            <input type="file" id="profileAvatarInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+        </div>
+        <form id="profileForm" class="auth-form">
+            <input type="text" id="profileUsername" placeholder="Новый логин" autocomplete="username">
+            <input type="password" id="profileNewPassword" placeholder="Новый пароль (мин. 6 символов)" autocomplete="new-password">
+            <input type="password" id="profileNewPasswordConfirm" placeholder="Подтвердите пароль">
+            <button type="button" id="profileUpdateBtn" class="auth-submit-btn">Сохранить изменения</button>
+        </form>
+        <div id="profileMessage" class="auth-message"></div>
+    </div>
+</div>
     <!-- Скрипт авторизации -->
     <script src="auth.js"></script>
 </body>

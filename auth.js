@@ -13,7 +13,6 @@
     let avatarInput, avatarPreview, avatarPreviewLetter;
     let profileModal, closeProfileModal, profileUsername, profileNewPassword, profileNewPasswordConfirm, profileAvatarPreview, profileAvatarInput, profileUpdateBtn, profileMessage;
     
-    // Вспомогательные функции
     function showMessage(el, text, type) {
         if (!el) return;
         el.textContent = text;
@@ -27,7 +26,7 @@
         if (el) el.className = 'auth-message';
     }
     
-    function closeModal() {
+    function closeAuthModal() {
         if (authModal) {
             authModal.hidden = true;
             authModal.style.display = 'none';
@@ -36,11 +35,20 @@
             if (signupForm) signupForm.reset();
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
+            hideMessage(authMessage);
         }
-        if (profileModal) profileModal.hidden = true;
     }
     
-    function openModal() {
+    function closeProfileModalFunc() {
+        if (profileModal) {
+            profileModal.hidden = true;
+            profileModal.style.display = 'none';
+            document.body.style.overflow = '';
+            if (profileMessage) hideMessage(profileMessage);
+        }
+    }
+    
+    function openAuthModal() {
         if (authModal) {
             authModal.hidden = false;
             authModal.style.display = 'flex';
@@ -48,16 +56,17 @@
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
             if (loginUsername) loginUsername.focus();
+            hideMessage(authMessage);
         }
     }
     
     async function uploadAvatar(file, userId) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${userId}/avatar.${fileExt}`;
-        const { error } = await supabaseClient.storage
+        const { error: uploadError } = await supabaseClient.storage
             .from('avatars')
             .upload(fileName, file, { upsert: true });
-        if (error) throw error;
+        if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabaseClient.storage
             .from('avatars')
             .getPublicUrl(fileName);
@@ -78,7 +87,7 @@
             .select('username, avatar_url')
             .eq('id', userId)
             .single();
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
         return data;
     }
     
@@ -151,15 +160,17 @@
             if (error) throw error;
             
             let avatarUrl = null;
-            if (avatarFile) {
+            if (avatarFile && data.user) {
                 avatarUrl = await uploadAvatar(avatarFile, data.user.id);
                 await updateProfile(data.user.id, { avatar_url: avatarUrl });
             }
             
             showMessage(authMessage, '✅ Регистрация успешна! Теперь войдите.', 'success');
             signupForm.reset();
-            if (avatarPreview) avatarPreview.style.backgroundImage = '';
-            if (avatarPreviewLetter) avatarPreviewLetter.textContent = '?';
+            if (avatarPreview) {
+                avatarPreview.style.backgroundImage = '';
+                if (avatarPreviewLetter) avatarPreviewLetter.textContent = '?';
+            }
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
             if (loginUsername) loginUsername.value = emailRaw || username;
@@ -182,7 +193,7 @@
             if (error) throw error;
             showMessage(authMessage, '✅ Добро пожаловать!', 'success');
             loginForm.reset();
-            closeModal();
+            closeAuthModal();
         } catch (err) {
             let msg = err.message;
             if (msg.includes('Invalid login credentials')) msg = 'Неверный логин или пароль';
@@ -192,22 +203,22 @@
     
     async function handleLogout() {
         await supabaseClient.auth.signOut();
-        closeModal();
+        closeAuthModal();
+        closeProfileModalFunc();
     }
     
-    // Личный кабинет
     async function openProfileModal() {
         if (!currentUser) return;
         const profile = await fetchProfile(currentUser.id);
-        if (profileUsername) profileUsername.value = profile.username;
+        if (profileUsername) profileUsername.value = profile?.username || '';
         if (profileAvatarPreview) {
-            if (profile.avatar_url) {
+            if (profile?.avatar_url) {
                 profileAvatarPreview.style.backgroundImage = `url(${profile.avatar_url})`;
                 profileAvatarPreview.style.backgroundSize = 'cover';
                 profileAvatarPreview.textContent = '';
             } else {
                 profileAvatarPreview.style.backgroundImage = '';
-                profileAvatarPreview.textContent = profile.username.charAt(0).toUpperCase();
+                profileAvatarPreview.textContent = (profile?.username?.charAt(0) || '?').toUpperCase();
             }
         }
         if (profileModal) {
@@ -222,34 +233,48 @@
         e.preventDefault();
         if (!currentUser) return;
         hideMessage(profileMessage);
+        
         const newUsername = profileUsername.value.trim();
         const newPassword = profileNewPassword.value;
         const confirmPassword = profileNewPasswordConfirm.value;
         const avatarFile = profileAvatarInput.files[0];
         
-        const updates = {};
-        if (newUsername && newUsername !== (await fetchProfile(currentUser.id)).username) {
-            if (newUsername.length < 3) return showMessage(profileMessage, 'Логин минимум 3 символа', 'error');
-            updates.username = newUsername;
+        try {
+            const updates = {};
+            
+            // Обновляем username
+            if (newUsername) {
+                if (newUsername.length < 3) throw new Error('Логин минимум 3 символа');
+                updates.username = newUsername;
+            }
+            
+            // Обновляем пароль
+            if (newPassword) {
+                if (newPassword.length < 6) throw new Error('Пароль минимум 6 символов');
+                if (newPassword !== confirmPassword) throw new Error('Пароли не совпадают');
+                const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+                if (error) throw error;
+            }
+            
+            // Обновляем аватар
+            if (avatarFile) {
+                const avatarUrl = await uploadAvatar(avatarFile, currentUser.id);
+                updates.avatar_url = avatarUrl;
+            }
+            
+            // Обновляем профиль в таблице profiles
+            if (Object.keys(updates).length > 0) {
+                await updateProfile(currentUser.id, updates);
+            }
+            
+            showMessage(profileMessage, '✅ Профиль обновлён!', 'success');
+            setTimeout(() => {
+                closeProfileModalFunc();
+                updateUI(currentUser);
+            }, 1500);
+        } catch (err) {
+            showMessage(profileMessage, '❌ ' + err.message, 'error');
         }
-        if (newPassword) {
-            if (newPassword.length < 6) return showMessage(profileMessage, 'Пароль минимум 6 символов', 'error');
-            if (newPassword !== confirmPassword) return showMessage(profileMessage, 'Пароли не совпадают', 'error');
-            await supabaseClient.auth.updateUser({ password: newPassword });
-        }
-        if (avatarFile) {
-            const avatarUrl = await uploadAvatar(avatarFile, currentUser.id);
-            updates.avatar_url = avatarUrl;
-        }
-        if (Object.keys(updates).length > 0) {
-            await updateProfile(currentUser.id, updates);
-        }
-        showMessage(profileMessage, '✅ Профиль обновлён!', 'success');
-        setTimeout(() => {
-            profileModal.hidden = true;
-            document.body.style.overflow = '';
-            updateUI(currentUser);
-        }, 1500);
     }
     
     async function initSupabase() {
@@ -262,13 +287,13 @@
         await updateUI(session?.user || null);
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             await updateUI(session?.user || null);
-            if (event === 'SIGNED_IN') closeModal();
+            if (event === 'SIGNED_IN') closeAuthModal();
         });
         return true;
     }
     
     document.addEventListener('DOMContentLoaded', async () => {
-        // Основные элементы
+        // Получаем элементы
         authBtn = document.getElementById('authBtn');
         authModal = document.getElementById('authModal');
         closeModalBtn = document.getElementById('closeModalBtn');
@@ -289,11 +314,61 @@
         switchToSignup = document.getElementById('switchToSignup');
         switchToLogin = document.getElementById('switchToLogin');
         
-        // Элементы для аватарки при регистрации
         avatarInput = document.getElementById('avatarInput');
         avatarPreview = document.getElementById('avatarPreview');
         avatarPreviewLetter = document.getElementById('avatarPreviewLetter');
-        const avatarUploader = document.querySelector('.avatar-uploader');
+        
+        profileModal = document.getElementById('profileModal');
+        closeProfileModal = document.getElementById('closeProfileModal');
+        profileUsername = document.getElementById('profileUsername');
+        profileNewPassword = document.getElementById('profileNewPassword');
+        profileNewPasswordConfirm = document.getElementById('profileNewPasswordConfirm');
+        profileAvatarPreview = document.getElementById('profileAvatarPreview');
+        profileAvatarInput = document.getElementById('profileAvatarInput');
+        profileUpdateBtn = document.getElementById('profileUpdateBtn');
+        profileMessage = document.getElementById('profileMessage');
+        
+        if (!authBtn || !authModal) {
+            console.error('❌ Кнопка или модальное окно не найдены');
+            return;
+        }
+        
+        await initSupabase();
+        
+        // Обработчик кнопки "Войти" / профиль
+        authBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentUser) {
+                openProfileModal();
+            } else {
+                openAuthModal();
+            }
+        });
+        
+        // Закрытие модалок по крестику
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeAuthModal);
+        if (closeProfileModal) closeProfileModal.addEventListener('click', closeProfileModalFunc);
+        
+        // Переключение между формами регистрации/входа
+        if (switchToSignup) {
+            switchToSignup.addEventListener('click', () => {
+                loginContainer.hidden = true;
+                signupContainer.hidden = false;
+                hideMessage(authMessage);
+                if (signupUsername) signupUsername.focus();
+            });
+        }
+        if (switchToLogin) {
+            switchToLogin.addEventListener('click', () => {
+                loginContainer.hidden = false;
+                signupContainer.hidden = true;
+                hideMessage(authMessage);
+                if (loginUsername) loginUsername.focus();
+            });
+        }
+        
+        // Загрузка аватарки при регистрации
+        const avatarUploader = document.querySelector('#signupFormContainer .avatar-uploader');
         if (avatarUploader && avatarInput) {
             avatarUploader.addEventListener('click', () => avatarInput.click());
             avatarInput.addEventListener('change', (e) => {
@@ -317,81 +392,31 @@
             });
         }
         
-        // Элементы личного кабинета
-        profileModal = document.getElementById('profileModal');
-        closeProfileModal = document.getElementById('closeProfileModal');
-        profileUsername = document.getElementById('profileUsername');
-        profileNewPassword = document.getElementById('profileNewPassword');
-        profileNewPasswordConfirm = document.getElementById('profileNewPasswordConfirm');
-        profileAvatarPreview = document.getElementById('profileAvatarPreview');
-        profileAvatarInput = document.getElementById('profileAvatarInput');
-        profileUpdateBtn = document.getElementById('profileUpdateBtn');
-        profileMessage = document.getElementById('profileMessage');
-        
-        if (profileModal) {
-            if (closeProfileModal) closeProfileModal.addEventListener('click', () => {
-                profileModal.hidden = true;
-                document.body.style.overflow = '';
-            });
-            if (profileUpdateBtn) profileUpdateBtn.addEventListener('click', handleProfileUpdate);
-            if (profileAvatarInput) {
-                const uploader = document.querySelector('#profileModal .avatar-uploader');
-                if (uploader) uploader.addEventListener('click', () => profileAvatarInput.click());
-                profileAvatarInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            if (profileAvatarPreview) {
-                                profileAvatarPreview.style.backgroundImage = `url(${event.target.result})`;
-                                profileAvatarPreview.style.backgroundSize = 'cover';
-                                profileAvatarPreview.textContent = '';
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-        }
-        
-        if (!authBtn || !authModal) {
-            console.error('❌ Кнопка или модальное окно не найдены');
-            return;
-        }
-        
-        await initSupabase();
-        
-        authBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (currentUser) {
-                openProfileModal();
-            } else {
-                openModal();
-            }
-        });
-        
-        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
-        
-        if (switchToSignup) {
-            switchToSignup.addEventListener('click', () => {
-                loginContainer.hidden = true;
-                signupContainer.hidden = false;
-                if (authMessage) hideMessage(authMessage);
-                if (signupUsername) signupUsername.focus();
-            });
-        }
-        if (switchToLogin) {
-            switchToLogin.addEventListener('click', () => {
-                loginContainer.hidden = false;
-                signupContainer.hidden = true;
-                if (authMessage) hideMessage(authMessage);
-                if (loginUsername) loginUsername.focus();
+        // Загрузка аватарки в профиле
+        const profileAvatarUploader = document.querySelector('#profileModal .avatar-uploader');
+        if (profileAvatarUploader && profileAvatarInput) {
+            profileAvatarUploader.addEventListener('click', () => profileAvatarInput.click());
+            profileAvatarInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        if (profileAvatarPreview) {
+                            profileAvatarPreview.style.backgroundImage = `url(${event.target.result})`;
+                            profileAvatarPreview.style.backgroundSize = 'cover';
+                            profileAvatarPreview.textContent = '';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
             });
         }
         
+        // Отправка форм
         if (loginForm) loginForm.addEventListener('submit', handleLogin);
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        if (profileUpdateBtn) profileUpdateBtn.addEventListener('click', handleProfileUpdate);
         
         console.log('✅ auth.js загружен, аватарки и профиль готовы');
     });

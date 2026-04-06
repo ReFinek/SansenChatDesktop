@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
 
-// ===== ИНИЦИАЛИЗАЦИЯ SUPABASE (защита от повторного объявления) =====
+// ===== ИНИЦИАЛИЗАЦИЯ SUPABASE =====
 const supabase = window.supabaseClient || 
     (window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
 
@@ -23,8 +23,8 @@ let currentUser = null;
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 document.addEventListener('DOMContentLoaded', async () => {
-    // Проверка сохранённой сессии
-    const {  { session } } = await supabase.auth.getSession();
+    // ✅ ИСПРАВЛЕНО: правильное деструктурирование ответа Supabase v2
+    const { data: { session } } = await supabase.auth.getSession();
     handleAuthState(session?.user ?? null);
     
     // Подписка на изменения авторизации
@@ -39,24 +39,24 @@ function handleAuthState(user) {
     
     if (user) {
         const username = user.user_metadata?.username || user.email?.split('@')[0] || 'Пользователь';
-        userNameDisplay.textContent = username;
-        authBtn.textContent = username;
-        authBtn.classList.add('logged-in');
-        userPanel.hidden = false;
-        loginForm.hidden = true;
-        signupForm.hidden = true;
+        if (userNameDisplay) userNameDisplay.textContent = username;
+        if (authBtn) authBtn.textContent = username;
+        if (authBtn) authBtn.classList.add('logged-in');
+        if (userPanel) userPanel.hidden = false;
+        if (loginForm) loginForm.hidden = true;
+        if (signupForm) signupForm.hidden = true;
         const tabs = document.querySelector('.modal-tabs');
         if (tabs) tabs.hidden = true;
     } else {
-        authBtn.textContent = 'Войти';
-        authBtn.classList.remove('logged-in');
-        userPanel.hidden = true;
-        loginForm.hidden = false;
+        if (authBtn) authBtn.textContent = 'Войти';
+        if (authBtn) authBtn.classList.remove('logged-in');
+        if (userPanel) userPanel.hidden = true;
+        if (loginForm) loginForm.hidden = false;
         const tabs = document.querySelector('.modal-tabs');
         if (tabs) tabs.hidden = false;
     }
     
-    // Сохраняем в localStorage для быстрого доступа
+    // Сохраняем в localStorage
     if (user) {
         localStorage.setItem('chat_user', JSON.stringify({
             id: user.id,
@@ -87,14 +87,14 @@ if (authModal) {
 }
 
 function closeModalHandler() {
-    authModal.hidden = true;
+    if (authModal) authModal.hidden = true;
     document.body.style.overflow = '';
     hideMessage();
 }
 
 // Закрытие по Escape
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !authModal.hidden) {
+    if (e.key === 'Escape' && authModal && !authModal.hidden) {
         closeModalHandler();
     }
 });
@@ -153,7 +153,7 @@ if (signupForm) {
             signupForm.reset();
             
             setTimeout(() => {
-                tabBtns[0]?.click();
+                if (tabBtns[0]) tabBtns[0].click();
             }, 1500);
             
         } catch (err) {

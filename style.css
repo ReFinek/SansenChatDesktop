@@ -433,3 +433,60 @@ section[id] {
     background: linear-gradient(135deg, #a78bfa, #8b5cf6);
     transform: scale(1.05);
 }
+/* ===== АВАТАР ПРИ РЕГИСТРАЦИИ ===== */
+.avatar-uploader {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 20px auto;
+    cursor: pointer;
+}
+
+.avatar-circle-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: bold;
+    color: white;
+    transition: opacity 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.avatar-hover-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0,0,0,0.6);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.9);
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.avatar-uploader:hover .avatar-hover-icon {
+    opacity: 1;
+}
+
+.avatar-uploader:hover .avatar-circle-preview {
+    opacity: 0.9;
+}
+
+/* Исправление центрирования буквы в кружке (кнопка) */
+.user-avatar-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}

@@ -26,7 +26,7 @@
         if (el) el.className = 'auth-message';
     }
     
-    function closeModal() {
+    function closeAuthModal() {
         if (authModal) {
             authModal.hidden = true;
             authModal.style.display = 'none';
@@ -35,18 +35,29 @@
             if (signupForm) signupForm.reset();
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
+            hideMessage(authMessage);
         }
-        if (profileModal) profileModal.hidden = true;
     }
     
-    function openModal() {
+    function openAuthModal() {
         if (authModal) {
             authModal.hidden = false;
             authModal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
+            hideMessage(authMessage);
             if (loginUsername) loginUsername.focus();
+        }
+    }
+    
+    function closeProfileModalFunc() {
+        if (profileModal) {
+            profileModal.hidden = true;
+            profileModal.style.display = 'none';
+            document.body.style.overflow = '';
+            hideMessage(profileMessage);
+            if (profileAvatarInput) profileAvatarInput.value = '';
         }
     }
     
@@ -86,7 +97,6 @@
             const profile = await fetchProfile(user.id);
             const username = profile?.username || user.user_metadata?.username || user.email?.split('@')[0] || 'Гость';
             let avatarUrl = profile?.avatar_url;
-            // Антикэш: добавляем timestamp к URL
             if (avatarUrl) {
                 avatarUrl = `${avatarUrl}?v=${Date.now()}`;
             }
@@ -188,7 +198,7 @@
             if (error) throw error;
             showMessage(authMessage, '✅ Добро пожаловать!', 'success');
             loginForm.reset();
-            closeModal();
+            closeAuthModal();
         } catch (err) {
             let msg = err.message;
             if (msg.includes('Invalid login credentials')) msg = 'Неверный логин или пароль';
@@ -198,7 +208,7 @@
     
     async function handleLogout() {
         await supabaseClient.auth.signOut();
-        closeModal();
+        closeAuthModal();
     }
     
     async function openProfileModal() {
@@ -269,16 +279,13 @@
         
         showMessage(profileMessage, '✅ Профиль обновлён!', 'success');
         
-        // Обновляем данные текущего пользователя и UI
+        // Обновляем данные текущего пользователя
         const { data: { session } } = await supabaseClient.auth.getSession();
         currentUser = session?.user || null;
         await updateUI(currentUser);
         
         setTimeout(() => {
-            if (profileModal) {
-                profileModal.hidden = true;
-                document.body.style.overflow = '';
-            }
+            closeProfileModalFunc();
         }, 1500);
     }
     
@@ -292,7 +299,7 @@
         await updateUI(session?.user || null);
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             await updateUI(session?.user || null);
-            if (event === 'SIGNED_IN') closeModal();
+            if (event === 'SIGNED_IN') closeAuthModal();
         });
         return true;
     }
@@ -358,32 +365,6 @@
         profileUpdateBtn = document.getElementById('profileUpdateBtn');
         profileMessage = document.getElementById('profileMessage');
         
-        if (profileModal) {
-            if (closeProfileModal) closeProfileModal.addEventListener('click', () => {
-                profileModal.hidden = true;
-                document.body.style.overflow = '';
-            });
-            if (profileUpdateBtn) profileUpdateBtn.addEventListener('click', handleProfileUpdate);
-            if (profileAvatarInput) {
-                const profileUploader = document.querySelector('#profileModal .avatar-uploader');
-                if (profileUploader) profileUploader.addEventListener('click', () => profileAvatarInput.click());
-                profileAvatarInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            if (profileAvatarPreview) {
-                                profileAvatarPreview.style.backgroundImage = `url(${event.target.result})`;
-                                profileAvatarPreview.style.backgroundSize = 'cover';
-                                profileAvatarPreview.textContent = '';
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-        }
-        
         if (!authBtn || !authModal) {
             console.error('❌ Кнопка или модальное окно не найдены');
             return;
@@ -391,22 +372,38 @@
         
         await initSupabase();
         
+        // Открытие основной модалки
         authBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (currentUser) {
                 openProfileModal();
             } else {
-                openModal();
+                openAuthModal();
             }
         });
         
-        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        // Закрытие основной модалки по крестику
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeAuthModal();
+            });
+        }
         
+        // Закрытие модалки профиля по крестику
+        if (closeProfileModal) {
+            closeProfileModal.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeProfileModalFunc();
+            });
+        }
+        
+        // Переключение вкладок
         if (switchToSignup) {
             switchToSignup.addEventListener('click', () => {
                 loginContainer.hidden = true;
                 signupContainer.hidden = false;
-                if (authMessage) hideMessage(authMessage);
+                hideMessage(authMessage);
                 if (signupUsername) signupUsername.focus();
             });
         }
@@ -414,15 +411,42 @@
             switchToLogin.addEventListener('click', () => {
                 loginContainer.hidden = false;
                 signupContainer.hidden = true;
-                if (authMessage) hideMessage(authMessage);
+                hideMessage(authMessage);
                 if (loginUsername) loginUsername.focus();
             });
         }
         
+        // Отправка форм
         if (loginForm) loginForm.addEventListener('submit', handleLogin);
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
         
-        console.log('✅ auth.js загружен, аватарки обновляются без кэша');
+        // Обновление аватара в профиле
+        if (profileAvatarInput) {
+            const profileUploader = document.querySelector('#profileModal .avatar-uploader');
+            if (profileUploader) {
+                profileUploader.addEventListener('click', () => profileAvatarInput.click());
+            }
+            profileAvatarInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        if (profileAvatarPreview) {
+                            profileAvatarPreview.style.backgroundImage = `url(${event.target.result})`;
+                            profileAvatarPreview.style.backgroundSize = 'cover';
+                            profileAvatarPreview.textContent = '';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        if (profileUpdateBtn) {
+            profileUpdateBtn.addEventListener('click', handleProfileUpdate);
+        }
+        
+        console.log('✅ auth.js загружен, модалки закрываются по крестику');
     });
 })();

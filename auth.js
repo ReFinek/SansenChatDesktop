@@ -1,6 +1,7 @@
 (function() {
     const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
+    
     let supabaseClient = null;
     let currentUser = null;
     let isAdmin = false;
@@ -129,13 +130,7 @@
 
     async function fetchProfile(userId) {
         if (!userId) return { username: null, avatar_url: null, is_admin: false };
-        
-        const { data, error } = await supabaseClient
-            .from('profiles')
-            .select('username, avatar_url, is_admin')
-            .eq('id', userId)
-            .maybeSingle(); // ✅ Не крашится, если профиль не найден
-
+        const { data, error } = await supabaseClient.from('profiles').select('username, avatar_url, is_admin').eq('id', userId).maybeSingle();
         if (error) {
             console.warn('⚠️ fetchProfile error:', error.message);
             return { username: null, avatar_url: null, is_admin: false };
@@ -351,14 +346,14 @@
             telegram_nick: appNick.value.trim(),
             age: parseInt(appAge.value),
             time_dedication: appTime.value.trim(),
-            rules_acknowledged: appRules.value.trim().length > 0,
+            rules_acknowledged: appRules.value.trim(), // ✅ Теперь сохраняется текст из поля
             reason: appReason.value.trim() || null,
             created_at: new Date().toISOString()
         };
 
         const { error } = await supabaseClient.from('moderator_applications').insert([data]);
         if (error) {
-            console.error(error);
+            console.error('Supabase insert error:', error);
             showToast('❌ Ошибка отправки заявки. Попробуйте позже.', 'error');
         } else {
             showToast('✅ Заявка успешно отправлена!', 'success');
@@ -383,7 +378,7 @@
             <div class="app-card">
                 <h4>${app.telegram_nick} (${app.age} лет)</h4>
                 <p>⏱️ Время: ${app.time_dedication}</p>
-                <p>📖 Правила: ${app.rules_acknowledged ? '✅ Ознакомлен' : '❌ Нет'}</p>
+                <p>📖 Ознакомление с правилами: <em>${app.rules_acknowledged || 'Не указано'}</em></p>
                 ${app.reason ? `<div class="reason">💬 ${app.reason}</div>` : ''}
                 <div class="app-meta">📅 Отправлено: ${new Date(app.created_at).toLocaleString()}</div>
             </div>
@@ -487,6 +482,8 @@
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
         if (profileUpdateBtn) profileUpdateBtn.addEventListener('click', handleProfileUpdate);
+        
+        // ✅ Ключевая строка: привязка отправки заявки
         if (applicationForm) applicationForm.addEventListener('submit', handleApplicationSubmit);
 
         // Аватарки

@@ -490,3 +490,180 @@ section[id] {
     justify-content: center;
     line-height: 1;
 }
+
+/* ===== КНОПКА ЗАЯВКИ ===== */
+.apply-btn {
+    position: absolute;
+    left: 20px;
+    padding: 6px 12px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.25s, background 0.25s;
+}
+.apply-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.apply-btn.admin-view { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+.apply-btn.admin-view:hover { background: rgba(139, 92, 246, 0.25); }
+
+/* ===== ЭЛЕМЕНТЫ ФОРМЫ ЗАЯВКИ ===== */
+.apply-note {
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    background: rgba(255, 193, 7, 0.08);
+    padding: 10px;
+    border-radius: 8px;
+}
+.auth-form textarea {
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+}
+.auth-form select {
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+}
+.auth-form select option { background: #1a1a1a; color: #fff; }
+
+/* ===== PUSH-УВЕДОМЛЕНИЯ ===== */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    background: rgba(18, 18, 22, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    animation: slideIn 0.3s ease, fadeOut 0.5s 3.5s forwards;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+}
+.toast.success { border-color: #22c55e; color: #86efac; }
+.toast.error { border-color: #ef4444; color: #fca5a5; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
+
+/* ===== СПИСОК ЗАЯВОК (АДМИН) ===== */
+.applications-list {
+    max-height: 70vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 8px;
+}
+.app-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: left;
+}
+.app-card h4 { margin: 0 0 8px; color: #fff; font-size: 16px; }
+.app-card p { margin: 4px 0; font-size: 14px; color: rgba(255,255,255,0.85); }
+.app-card .reason { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-style: italic; color: #e0e0e0; }
+.app-meta { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 10px; }
+
+/* ===== ФИКС МОДАЛКИ ЗАЯВКИ ===== */
+.modal-container {
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+.modal-container::-webkit-scrollbar { width: 6px; }
+.modal-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+/* Элементы заголовка не должны сжиматься */
+.modal-title, .apply-note { flex-shrink: 0; }
+.modal-title { margin-bottom: 14px; }
+.apply-note { margin-bottom: 14px; }
+
+/* Поля формы */
+.auth-form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 8px;
+}
+.auth-form input,
+.auth-form textarea {
+    width: 100%;
+    font-family: inherit;
+}
+.auth-form textarea {
+    min-height: 90px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* ===== СТИЛИЗАЦИЯ СТРЕЛОК ВОЗРАСТА ===== */
+
+/* 1. Убираем стандартные стили Firefox (там стрелок нет, но нужен сброс) */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* 2. Кастомизация стрелок для Chrome, Edge, Safari */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none; /* Убираем стандартный вид */
+    appearance: none;
+    margin: 0; /* Убираем отступы */
+    cursor: pointer;
+
+    /* Стилизация под тёмную тему сайта */
+    background-color: rgba(255, 255, 255, 0.05); /* Тёмный полупрозрачный фон */
+    border-left: 1px solid rgba(255, 255, 255, 0.1); /* Разделитель */
+    opacity: 0.5; /* Делаем стрелки менее заметными */
+    transition: all 0.2s ease;
+}
+
+/* 3. Подсветка при наведении мыши */
+input[type="number"]:hover::-webkit-inner-spin-button,
+input[type="number"]:hover::-webkit-outer-spin-button {
+    opacity: 1; /* Стрелки становятся ярче */
+    background-color: rgba(255, 255, 255, 0.1); /* Фон становится светлее */
+}
+
+/* 4. Убираем стрелки при фокусе (чтобы не мешали вводу) - по желанию */
+/* Если хотите, чтобы они оставались всегда, удалите этот блок */
+input[type="number"]:focus::-webkit-inner-spin-button,
+input[type="number"]:focus::-webkit-outer-spin-button {
+    opacity: 0.3;
+}

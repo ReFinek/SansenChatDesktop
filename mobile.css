@@ -137,3 +137,49 @@
         margin-bottom: 10px;
     }
 }
+/* ===== КНОПКА ЗАЯВКИ НА МОБИЛЬНЫХ ===== */
+.apply-btn {
+    position: static;
+    order: -10;
+    margin-bottom: 8px;
+    width: 100%;
+    max-width: 240px;
+    min-height: 44px;
+    font-size: 14px;
+}
+
+/* ===== АДАПТАЦИЯ МОДАЛОК И СПИСКОВ ===== */
+.applications-list { max-height: 60vh; }
+#toast-container { top: 10px; right: 10px; left: 10px; }
+.toast { width: 100%; text-align: center; }
+
+@media (max-width: 768px) {
+    .modal-container {
+        width: 96%;
+        max-height: 85vh;
+        padding: 20px 14px;
+        margin: 0 auto;
+    }
+    .modal-title { font-size: 22px; margin-bottom: 12px; }
+    .apply-note { font-size: 12px; padding: 8px; line-height: 1.4; }
+    
+    /* Предотвращает авто-зум при фокусе на iOS */
+    .auth-form input,
+    .auth-form textarea {
+        font-size: 16px !important;
+        min-height: 48px;
+        padding: 12px 14px;
+        border-radius: 10px;
+    }
+    
+    .auth-form textarea { min-height: 80px; }
+    
+    .auth-submit-btn {
+        min-height: 52px;
+        font-size: 15px;
+        border-radius: 30px;
+    }
+    
+    /* Исправление отступов для кнопки закрытия */
+    .modal-close { top: 10px; right: 10px; font-size: 26px; }
+}

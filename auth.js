@@ -1,31 +1,47 @@
 (function() {
     const SUPABASE_URL = 'https://vgbvtxzwziserskjqcms.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnYnZ0eHp3emlzZXJza2pxY21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MTgwNjcsImV4cCI6MjA5MDk5NDA2N30.CbTvOA3HoqoId1DKDFX3hIAfdIhSiJoQEnokshvpnnA';
-    
     let supabaseClient = null;
     let currentUser = null;
-    
-    // DOM элементы
+    let isAdmin = false;
+
+    // DOM элементы авторизации
     let authBtn, authModal, closeModalBtn, loginContainer, signupContainer, loginForm, signupForm;
     let loginUsername, loginPassword, signupUsername, signupEmail, signupPassword, signupPasswordConfirm;
     let authMessage, userPanel, userNameDisplay, logoutBtn;
     let switchToSignup, switchToLogin;
     let avatarInput, avatarPreview, avatarPreviewLetter;
+
+    // DOM элементы профиля
     let profileModal, closeProfileModal, profileUsername, profileNewPassword, profileNewPasswordConfirm, profileAvatarPreview, profileAvatarInput, profileUpdateBtn, profileMessage;
-    
+
+    // DOM элементы заявок
+    let applyBtn, applyModal, closeApplyModalBtn, applicationForm, appNick, appAge, appTime, appRules, appReason;
+    let adminApplicationsModal, closeAdminModalBtn, applicationsList;
+
+    // === УТИЛИТЫ ===
     function showMessage(el, text, type) {
         if (!el) return;
         el.textContent = text;
         el.className = `auth-message show ${type}`;
-        setTimeout(() => {
-            if (el) el.classList.remove('show');
-        }, 4000);
+        setTimeout(() => { if (el) el.classList.remove('show'); }, 4000);
     }
-    
+
     function hideMessage(el) {
         if (el) el.className = 'auth-message';
     }
-    
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // === МОДАЛКИ ===
     function closeAuthModal() {
         if (authModal) {
             authModal.hidden = true;
@@ -38,7 +54,7 @@
             hideMessage(authMessage);
         }
     }
-    
+
     function openAuthModal() {
         if (authModal) {
             authModal.hidden = false;
@@ -50,7 +66,7 @@
             if (loginUsername) loginUsername.focus();
         }
     }
-    
+
     function closeProfileModalFunc() {
         if (profileModal) {
             profileModal.hidden = true;
@@ -60,47 +76,83 @@
             if (profileAvatarInput) profileAvatarInput.value = '';
         }
     }
-    
+
+    function openApplyModal() {
+        if (applyModal) {
+            applyModal.hidden = false;
+            applyModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            if (appNick) appNick.focus();
+        }
+    }
+
+    function closeApplyModal() {
+        if (applyModal) {
+            applyModal.hidden = true;
+            applyModal.style.display = 'none';
+            document.body.style.overflow = '';
+            if (applicationForm) applicationForm.reset();
+        }
+    }
+
+    function openAdminModal() {
+        if (adminApplicationsModal) {
+            adminApplicationsModal.hidden = false;
+            adminApplicationsModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            loadApplications();
+        }
+    }
+
+    function closeAdminModal() {
+        if (adminApplicationsModal) {
+            adminApplicationsModal.hidden = true;
+            adminApplicationsModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+
+    // === SUPABASE HELPER ===
     async function uploadAvatar(file, userId) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${userId}/avatar.${fileExt}`;
-        const { error } = await supabaseClient.storage
-            .from('avatars')
-            .upload(fileName, file, { upsert: true });
+        const { error } = await supabaseClient.storage.from('avatars').upload(fileName, file, { upsert: true });
         if (error) throw error;
-        const { data: { publicUrl } } = supabaseClient.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
+        const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(fileName);
         return publicUrl;
     }
-    
+
     async function updateProfile(userId, updates) {
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update(updates)
-            .eq('id', userId);
+        const { error } = await supabaseClient.from('profiles').update(updates).eq('id', userId);
         if (error) throw error;
     }
-    
+
     async function fetchProfile(userId) {
+        if (!userId) return { username: null, avatar_url: null, is_admin: false };
+        
         const { data, error } = await supabaseClient
             .from('profiles')
-            .select('username, avatar_url')
+            .select('username, avatar_url, is_admin')
             .eq('id', userId)
-            .single();
-        if (error) throw error;
-        return data;
+            .maybeSingle(); // ✅ Не крашится, если профиль не найден
+
+        if (error) {
+            console.warn('⚠️ fetchProfile error:', error.message);
+            return { username: null, avatar_url: null, is_admin: false };
+        }
+        return data || { username: null, avatar_url: null, is_admin: false };
     }
-    
+
     async function updateUI(user) {
         if (user) {
             const profile = await fetchProfile(user.id);
             const username = profile?.username || user.user_metadata?.username || user.email?.split('@')[0] || 'Гость';
             let avatarUrl = profile?.avatar_url;
-            if (avatarUrl) {
-                avatarUrl = `${avatarUrl}?v=${Date.now()}`;
-            }
+            if (avatarUrl) avatarUrl = `${avatarUrl}?v=${Date.now()}`;
             
+            isAdmin = !!profile?.is_admin;
+            updateApplyButtonState();
+
             if (authBtn) {
                 authBtn.innerHTML = '';
                 const avatarSpan = document.createElement('span');
@@ -108,10 +160,7 @@
                 if (avatarUrl) {
                     const img = document.createElement('img');
                     img.src = avatarUrl;
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.borderRadius = '50%';
-                    img.style.objectFit = 'cover';
+                    img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
                     avatarSpan.appendChild(img);
                 } else {
                     avatarSpan.textContent = username.charAt(0).toUpperCase();
@@ -137,11 +186,28 @@
             if (userPanel) userPanel.hidden = true;
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
+            isAdmin = false;
+            updateApplyButtonState();
             localStorage.removeItem('chat_user');
             currentUser = null;
         }
     }
-    
+
+    function updateApplyButtonState() {
+        if (!applyBtn) return;
+        if (!currentUser) {
+            applyBtn.textContent = 'Подать заявку';
+            applyBtn.classList.remove('admin-view');
+        } else if (isAdmin) {
+            applyBtn.textContent = 'Заявки участников';
+            applyBtn.classList.add('admin-view');
+        } else {
+            applyBtn.textContent = 'Подать заявку';
+            applyBtn.classList.remove('admin-view');
+        }
+    }
+
+    // === ОБРАБОТЧИКИ АВТОРИЗАЦИИ ===
     async function handleSignup(e) {
         e.preventDefault();
         hideMessage(authMessage);
@@ -157,10 +223,7 @@
         
         const email = emailRaw || `${username}@chat.placeholder`;
         try {
-            const { data, error } = await supabaseClient.auth.signUp({
-                email, password,
-                options: { data: { username } }
-            });
+            const { data, error } = await supabaseClient.auth.signUp({ email, password, options: { data: { username } } });
             if (error) throw error;
             
             let avatarUrl = null;
@@ -171,11 +234,7 @@
             
             showMessage(authMessage, '✅ Регистрация успешна! Теперь войдите.', 'success');
             signupForm.reset();
-            if (avatarPreview) {
-                avatarPreview.style.backgroundImage = '';
-                avatarPreview.textContent = '';
-                if (avatarPreviewLetter) avatarPreviewLetter.textContent = '?';
-            }
+            if (avatarPreview) { avatarPreview.style.backgroundImage = ''; avatarPreview.textContent = ''; if (avatarPreviewLetter) avatarPreviewLetter.textContent = '?'; }
             if (loginContainer) loginContainer.hidden = false;
             if (signupContainer) signupContainer.hidden = true;
             if (loginUsername) loginUsername.value = emailRaw || username;
@@ -185,13 +244,14 @@
             showMessage(authMessage, '❌ ' + msg, 'error');
         }
     }
-    
+
     async function handleLogin(e) {
         e.preventDefault();
         hideMessage(authMessage);
         const loginValue = loginUsername.value.trim();
         const password = loginPassword.value;
         if (!loginValue || !password) return showMessage(authMessage, 'Заполните оба поля', 'error');
+        
         const email = loginValue.includes('@') ? loginValue : `${loginValue}@chat.placeholder`;
         try {
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -205,20 +265,20 @@
             showMessage(authMessage, '❌ ' + msg, 'error');
         }
     }
-    
+
     async function handleLogout() {
         await supabaseClient.auth.signOut();
         closeAuthModal();
     }
-    
+
+    // === ОБРАБОТЧИКИ ПРОФИЛЯ ===
     async function openProfileModal() {
         if (!currentUser) return;
         const profile = await fetchProfile(currentUser.id);
         if (profileUsername) profileUsername.value = profile.username;
         if (profileAvatarPreview) {
             if (profile.avatar_url) {
-                const avatarWithCache = `${profile.avatar_url}?v=${Date.now()}`;
-                profileAvatarPreview.style.backgroundImage = `url(${avatarWithCache})`;
+                profileAvatarPreview.style.backgroundImage = `url(${profile.avatar_url}?v=${Date.now()})`;
                 profileAvatarPreview.style.backgroundSize = 'cover';
                 profileAvatarPreview.textContent = '';
             } else {
@@ -233,7 +293,7 @@
             if (profileMessage) hideMessage(profileMessage);
         }
     }
-    
+
     async function handleProfileUpdate(e) {
         e.preventDefault();
         if (!currentUser) return;
@@ -244,56 +304,95 @@
         const avatarFile = profileAvatarInput.files[0];
         
         const updates = {};
-        
         if (newUsername) {
             if (newUsername.length < 3) return showMessage(profileMessage, 'Логин минимум 3 символа', 'error');
             updates.username = newUsername;
         }
-        
         if (newPassword) {
             if (newPassword.length < 6) return showMessage(profileMessage, 'Пароль минимум 6 символов', 'error');
             if (newPassword !== confirmPassword) return showMessage(profileMessage, 'Пароли не совпадают', 'error');
-            try {
-                await supabaseClient.auth.updateUser({ password: newPassword });
-            } catch (err) {
-                return showMessage(profileMessage, 'Ошибка обновления пароля: ' + err.message, 'error');
-            }
+            try { await supabaseClient.auth.updateUser({ password: newPassword }); } 
+            catch (err) { return showMessage(profileMessage, 'Ошибка обновления пароля: ' + err.message, 'error'); }
         }
-        
         if (avatarFile) {
             try {
                 const avatarUrl = await uploadAvatar(avatarFile, currentUser.id);
                 updates.avatar_url = avatarUrl;
-            } catch (err) {
-                return showMessage(profileMessage, 'Ошибка загрузки аватарки: ' + err.message, 'error');
-            }
+            } catch (err) { return showMessage(profileMessage, 'Ошибка загрузки аватарки: ' + err.message, 'error'); }
         }
-        
         if (Object.keys(updates).length > 0) {
-            try {
-                await updateProfile(currentUser.id, updates);
-            } catch (err) {
-                return showMessage(profileMessage, 'Ошибка обновления профиля: ' + err.message, 'error');
-            }
+            try { await updateProfile(currentUser.id, updates); } 
+            catch (err) { return showMessage(profileMessage, 'Ошибка обновления профиля: ' + err.message, 'error'); }
         }
-        
         showMessage(profileMessage, '✅ Профиль обновлён!', 'success');
-        
-        // Обновляем данные текущего пользователя
         const { data: { session } } = await supabaseClient.auth.getSession();
         currentUser = session?.user || null;
         await updateUI(currentUser);
-        
-        setTimeout(() => {
-            closeProfileModalFunc();
-        }, 1500);
+        setTimeout(closeProfileModalFunc, 1500);
     }
-    
-    async function initSupabase() {
-        if (!window.supabase) {
-            console.error('❌ Библиотека Supabase не загружена');
-            return false;
+
+    // === ОБРАБОТЧИКИ ЗАЯВОК ===
+    async function handleApplyClick() {
+        if (!currentUser) {
+            showToast('⚠️ Вы не авторизованы. Пожалуйста, войдите в аккаунт.', 'error');
+            openAuthModal();
+            return;
         }
+        if (isAdmin) openAdminModal();
+        else openApplyModal();
+    }
+
+    async function handleApplicationSubmit(e) {
+        e.preventDefault();
+        if (!currentUser) return;
+        
+        const data = {
+            user_id: currentUser.id,
+            telegram_nick: appNick.value.trim(),
+            age: parseInt(appAge.value),
+            time_dedication: appTime.value.trim(),
+            rules_acknowledged: appRules.value.trim().length > 0,
+            reason: appReason.value.trim() || null,
+            created_at: new Date().toISOString()
+        };
+
+        const { error } = await supabaseClient.from('moderator_applications').insert([data]);
+        if (error) {
+            console.error(error);
+            showToast('❌ Ошибка отправки заявки. Попробуйте позже.', 'error');
+        } else {
+            showToast('✅ Заявка успешно отправлена!', 'success');
+            closeApplyModal();
+        }
+    }
+
+    async function loadApplications() {
+        if (!applicationsList) return;
+        applicationsList.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5);">Загрузка...</p>';
+        
+        const { data, error } = await supabaseClient.from('moderator_applications').select('*').order('created_at', { ascending: false });
+        if (error || !data) {
+            applicationsList.innerHTML = '<p style="text-align:center; color:#fca5a5;">Не удалось загрузить заявки</p>';
+            return;
+        }
+        if (data.length === 0) {
+            applicationsList.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5);">Заявок пока нет</p>';
+            return;
+        }
+        applicationsList.innerHTML = data.map(app => `
+            <div class="app-card">
+                <h4>${app.telegram_nick} (${app.age} лет)</h4>
+                <p>⏱️ Время: ${app.time_dedication}</p>
+                <p>📖 Правила: ${app.rules_acknowledged ? '✅ Ознакомлен' : '❌ Нет'}</p>
+                ${app.reason ? `<div class="reason">💬 ${app.reason}</div>` : ''}
+                <div class="app-meta">📅 Отправлено: ${new Date(app.created_at).toLocaleString()}</div>
+            </div>
+        `).join('');
+    }
+
+    // === ИНИЦИАЛИЗАЦИЯ ===
+    async function initSupabase() {
+        if (!window.supabase) { console.error('❌ Библиотека Supabase не загружена'); return false; }
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const { data: { session } } = await supabaseClient.auth.getSession();
         await updateUI(session?.user || null);
@@ -303,9 +402,9 @@
         });
         return true;
     }
-    
+
     document.addEventListener('DOMContentLoaded', async () => {
-        // Получаем элементы
+        // Авторизация
         authBtn = document.getElementById('authBtn');
         authModal = document.getElementById('authModal');
         closeModalBtn = document.getElementById('closeModalBtn');
@@ -325,36 +424,11 @@
         logoutBtn = document.getElementById('logoutBtn');
         switchToSignup = document.getElementById('switchToSignup');
         switchToLogin = document.getElementById('switchToLogin');
-        
-        // Аватар при регистрации
         avatarInput = document.getElementById('avatarInput');
         avatarPreview = document.getElementById('avatarPreview');
         avatarPreviewLetter = document.getElementById('avatarPreviewLetter');
-        const avatarUploader = document.querySelector('.avatar-uploader');
-        if (avatarUploader && avatarInput) {
-            avatarUploader.addEventListener('click', () => avatarInput.click());
-            avatarInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        if (avatarPreview) {
-                            avatarPreview.style.backgroundImage = `url(${event.target.result})`;
-                            avatarPreview.style.backgroundSize = 'cover';
-                            avatarPreview.textContent = '';
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    if (avatarPreview) {
-                        avatarPreview.style.backgroundImage = '';
-                        if (avatarPreviewLetter) avatarPreviewLetter.textContent = '?';
-                    }
-                }
-            });
-        }
-        
-        // Элементы профиля
+
+        // Профиль
         profileModal = document.getElementById('profileModal');
         closeProfileModal = document.getElementById('closeProfileModal');
         profileUsername = document.getElementById('profileUsername');
@@ -364,89 +438,76 @@
         profileAvatarInput = document.getElementById('profileAvatarInput');
         profileUpdateBtn = document.getElementById('profileUpdateBtn');
         profileMessage = document.getElementById('profileMessage');
-        
-        if (!authBtn || !authModal) {
-            console.error('❌ Кнопка или модальное окно не найдены');
-            return;
-        }
-        
+
+        // Заявки
+        applyBtn = document.getElementById('applyBtn');
+        applyModal = document.getElementById('applyModal');
+        closeApplyModalBtn = document.getElementById('closeApplyModal');
+        applicationForm = document.getElementById('applicationForm');
+        appNick = document.getElementById('appNick');
+        appAge = document.getElementById('appAge');
+        appTime = document.getElementById('appTime');
+        appRules = document.getElementById('appRules');
+        appReason = document.getElementById('appReason');
+        adminApplicationsModal = document.getElementById('adminApplicationsModal');
+        closeAdminModalBtn = document.getElementById('closeAdminModal');
+        applicationsList = document.getElementById('applicationsList');
+
+        if (!authBtn || !authModal) { console.error('❌ Кнопка или модальное окно не найдены'); return; }
+
         await initSupabase();
-        
-        // Открытие основной модалки
-        authBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (currentUser) {
-                openProfileModal();
-            } else {
-                openAuthModal();
-            }
+
+        // === ПРИВЯЗКА СОБЫТИЙ ===
+        authBtn.addEventListener('click', (e) => { e.preventDefault(); currentUser ? openProfileModal() : openAuthModal(); });
+        if (applyBtn) applyBtn.addEventListener('click', handleApplyClick);
+
+        // Закрытие по крестику
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeAuthModal);
+        if (closeProfileModal) closeProfileModal.addEventListener('click', closeProfileModalFunc);
+        if (closeApplyModalBtn) closeApplyModalBtn.addEventListener('click', closeApplyModal);
+        if (closeAdminModalBtn) closeAdminModalBtn.addEventListener('click', closeAdminModal);
+
+        // Закрытие по клику на фон
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.hidden = true;
+                    overlay.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            });
         });
-        
-        // Закрытие основной модалки по крестику
-        if (closeModalBtn) {
-            closeModalBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                closeAuthModal();
-            });
-        }
-        
-        // Закрытие модалки профиля по крестику
-        if (closeProfileModal) {
-            closeProfileModal.addEventListener('click', (e) => {
-                e.preventDefault();
-                closeProfileModalFunc();
-            });
-        }
-        
+
         // Переключение вкладок
-        if (switchToSignup) {
-            switchToSignup.addEventListener('click', () => {
-                loginContainer.hidden = true;
-                signupContainer.hidden = false;
-                hideMessage(authMessage);
-                if (signupUsername) signupUsername.focus();
-            });
-        }
-        if (switchToLogin) {
-            switchToLogin.addEventListener('click', () => {
-                loginContainer.hidden = false;
-                signupContainer.hidden = true;
-                hideMessage(authMessage);
-                if (loginUsername) loginUsername.focus();
-            });
-        }
-        
+        if (switchToSignup) switchToSignup.addEventListener('click', () => { loginContainer.hidden = true; signupContainer.hidden = false; hideMessage(authMessage); signupUsername?.focus(); });
+        if (switchToLogin) switchToLogin.addEventListener('click', () => { loginContainer.hidden = false; signupContainer.hidden = true; hideMessage(authMessage); loginUsername?.focus(); });
+
         // Отправка форм
         if (loginForm) loginForm.addEventListener('submit', handleLogin);
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
-        
-        // Обновление аватара в профиле
-        if (profileAvatarInput) {
-            const profileUploader = document.querySelector('#profileModal .avatar-uploader');
-            if (profileUploader) {
-                profileUploader.addEventListener('click', () => profileAvatarInput.click());
-            }
-            profileAvatarInput.addEventListener('change', (e) => {
+        if (profileUpdateBtn) profileUpdateBtn.addEventListener('click', handleProfileUpdate);
+        if (applicationForm) applicationForm.addEventListener('submit', handleApplicationSubmit);
+
+        // Аватарки
+        const setupAvatar = (uploader, input, preview, letter) => {
+            if (!uploader || !input) return;
+            uploader.addEventListener('click', () => input.click());
+            input.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (event) => {
-                        if (profileAvatarPreview) {
-                            profileAvatarPreview.style.backgroundImage = `url(${event.target.result})`;
-                            profileAvatarPreview.style.backgroundSize = 'cover';
-                            profileAvatarPreview.textContent = '';
-                        }
-                    };
+                    reader.onload = (ev) => { preview.style.backgroundImage = `url(${ev.target.result})`; preview.style.backgroundSize = 'cover'; preview.textContent = ''; };
                     reader.readAsDataURL(file);
+                } else {
+                    preview.style.backgroundImage = '';
+                    if (letter) letter.textContent = '?';
                 }
             });
-        }
-        
-        if (profileUpdateBtn) {
-            profileUpdateBtn.addEventListener('click', handleProfileUpdate);
-        }
-        
-        console.log('✅ auth.js загружен, модалки закрываются по крестику');
+        };
+        setupAvatar(document.querySelector('#authModal .avatar-uploader'), avatarInput, avatarPreview, avatarPreviewLetter);
+        setupAvatar(document.querySelector('#profileModal .avatar-uploader'), profileAvatarInput, profileAvatarPreview, null);
+
+        console.log('✅ auth.js загружен. Все системы работают.');
     });
 })();

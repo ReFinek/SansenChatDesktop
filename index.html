@@ -23,6 +23,7 @@
 
     <!-- Навигация -->
     <nav class="nav">
+        <button id="applyBtn" class="apply-btn">Подать заявку</button>
         <div class="nav-links">
             <a href="#light">Лёгкая степень</a>
             <a href="#medium">Средняя степень</a>
@@ -240,72 +241,100 @@
         </div>
     </footer>
 
-<!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
-<div id="authModal" class="modal-overlay" hidden>
-    <div class="modal-container">
-        <button id="closeModalBtn" class="modal-close">&times;</button>
-        
-        <!-- Форма входа -->
-        <div id="loginFormContainer">
-            <h2 class="modal-title">Авторизация</h2>
-            <form id="loginForm" class="auth-form">
-                <input type="text" id="loginUsername" placeholder="Логин или email" required autocomplete="username">
-                <input type="password" id="loginPassword" placeholder="Пароль" required autocomplete="current-password">
-                <button type="submit" class="auth-submit-btn">Войти</button>
-            </form>
-            <p class="auth-switch">Нет аккаунта? <span id="switchToSignup" class="auth-switch-link">Зарегистрироваться</span></p>
-        </div>
-        
-        <!-- Форма регистрации (скрыта по умолчанию) -->
-        <div id="signupFormContainer" hidden>
-            <h2 class="modal-title">Регистрация</h2>
-            <div class="avatar-uploader">
-                <div id="avatarPreview" class="avatar-circle-preview">
-                    <span id="avatarPreviewLetter">?</span>
-                </div>
-                <div class="avatar-hover-icon">
-                    <i class="fas fa-camera"></i>
-                </div>
-                <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+    <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+    <div id="authModal" class="modal-overlay" hidden>
+        <div class="modal-container">
+            <button id="closeModalBtn" class="modal-close">&times;</button>
+            
+            <!-- Форма входа -->
+            <div id="loginFormContainer">
+                <h2 class="modal-title">Авторизация</h2>
+                <form id="loginForm" class="auth-form">
+                    <input type="text" id="loginUsername" placeholder="Логин или email" required autocomplete="username">
+                    <input type="password" id="loginPassword" placeholder="Пароль" required autocomplete="current-password">
+                    <button type="submit" class="auth-submit-btn">Войти</button>
+                </form>
+                <p class="auth-switch">Нет аккаунта? <span id="switchToSignup" class="auth-switch-link">Зарегистрироваться</span></p>
             </div>
-            <form id="signupForm" class="auth-form">
-                <input type="text" id="signupUsername" placeholder="Логин" required autocomplete="username">
-                <input type="email" id="signupEmail" placeholder="Email (необязательно)" autocomplete="email">
-                <input type="password" id="signupPassword" placeholder="Пароль (мин. 6 символов)" required minlength="6">
-                <input type="password" id="signupPasswordConfirm" placeholder="Подтвердите пароль" required>
-                <button type="submit" class="auth-submit-btn">Зарегистрироваться</button>
+            
+            <!-- Форма регистрации (скрыта по умолчанию) -->
+            <div id="signupFormContainer" hidden>
+                <h2 class="modal-title">Регистрация</h2>
+                <div class="avatar-uploader">
+                    <div id="avatarPreview" class="avatar-circle-preview">
+                        <span id="avatarPreviewLetter">?</span>
+                    </div>
+                    <div class="avatar-hover-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+                </div>
+                <form id="signupForm" class="auth-form">
+                    <input type="text" id="signupUsername" placeholder="Логин" required autocomplete="username">
+                    <input type="email" id="signupEmail" placeholder="Email (необязательно)" autocomplete="email">
+                    <input type="password" id="signupPassword" placeholder="Пароль (мин. 6 символов)" required minlength="6">
+                    <input type="password" id="signupPasswordConfirm" placeholder="Подтвердите пароль" required>
+                    <button type="submit" class="auth-submit-btn">Зарегистрироваться</button>
+                </form>
+                <p class="auth-switch">Уже есть аккаунт? <span id="switchToLogin" class="auth-switch-link">Войти</span></p>
+            </div>
+            
+            <div id="authMessage" class="auth-message"></div>
+            
+            <!-- Блок авторизованного пользователя -->
+            <div id="userPanel" class="user-panel" hidden>
+                <p>Вы вошли как: <strong id="userNameDisplay"></strong></p>
+                <button id="logoutBtn" class="logout-btn">Выйти</button>
+            </div>
+        </div>
+    </div>
+    <!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
+    <div id="profileModal" class="modal-overlay" hidden>
+        <div class="modal-container">
+            <button id="closeProfileModal" class="modal-close">&times;</button>
+            <h2 class="modal-title">Личный кабинет</h2>
+            <div class="avatar-uploader">
+                <div id="profileAvatarPreview" class="avatar-circle-preview">?</div>
+                <div class="avatar-hover-icon"><i class="fas fa-camera"></i></div>
+                <input type="file" id="profileAvatarInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+            </div>
+            <form id="profileForm" class="auth-form">
+                <input type="text" id="profileUsername" placeholder="Новый логин" autocomplete="username">
+                <input type="password" id="profileNewPassword" placeholder="Новый пароль (мин. 6 символов)" autocomplete="new-password">
+                <input type="password" id="profileNewPasswordConfirm" placeholder="Подтвердите пароль">
+                <button type="button" id="profileUpdateBtn" class="auth-submit-btn">Сохранить изменения</button>
             </form>
-            <p class="auth-switch">Уже есть аккаунт? <span id="switchToLogin" class="auth-switch-link">Войти</span></p>
-        </div>
-        
-        <div id="authMessage" class="auth-message"></div>
-        
-        <!-- Блок авторизованного пользователя -->
-        <div id="userPanel" class="user-panel" hidden>
-            <p>Вы вошли как: <strong id="userNameDisplay"></strong></p>
-            <button id="logoutBtn" class="logout-btn">Выйти</button>
+            <div id="profileMessage" class="auth-message"></div>
         </div>
     </div>
-</div>
-<!-- МОДАЛЬНОЕ ОКНО ПРОФИЛЯ -->
-<div id="profileModal" class="modal-overlay" hidden>
-    <div class="modal-container">
-        <button id="closeProfileModal" class="modal-close">&times;</button>
-        <h2 class="modal-title">Личный кабинет</h2>
-        <div class="avatar-uploader">
-            <div id="profileAvatarPreview" class="avatar-circle-preview">?</div>
-            <div class="avatar-hover-icon"><i class="fas fa-camera"></i></div>
-            <input type="file" id="profileAvatarInput" accept="image/jpeg,image/png,image/jpg" style="display: none;">
+    <!-- Контейнер для push-уведомлений -->
+    <div id="toast-container"></div>
+
+    <!-- Модальное окно заявки -->
+    <div id="applyModal" class="modal-overlay" hidden>
+        <div class="modal-container">
+            <button class="modal-close" id="closeApplyModal">&times;</button>
+            <h2 class="modal-title">Заявка на модератора</h2>
+            <p class="apply-note">⚠️ Заявки рассматриваются администрацией вручную. Процесс рассмотрения и выбор могут занять некоторое время.</p>
+            <form id="applicationForm" class="auth-form">
+                <input type="text" id="appNick" placeholder="Ваш тег в Telegram" required>
+                <input type="number" id="appAge" placeholder="Ваш возраст" required min="1" max="">
+                <input type="text" id="appTime" placeholder="Сколько времени готовы уделять?" required>
+                <input type="text" id="appRules" placeholder="Ознакомлены ли вы с правилами?" required>
+                <textarea id="appReason" placeholder="Почему вы хотите стать модератором? (приветствуются развёрнутые ответы)" rows="5"></textarea>
+                <button type="submit" class="auth-submit-btn">Отправить заявку</button>
+            </form>
         </div>
-        <form id="profileForm" class="auth-form">
-            <input type="text" id="profileUsername" placeholder="Новый логин" autocomplete="username">
-            <input type="password" id="profileNewPassword" placeholder="Новый пароль (мин. 6 символов)" autocomplete="new-password">
-            <input type="password" id="profileNewPasswordConfirm" placeholder="Подтвердите пароль">
-            <button type="button" id="profileUpdateBtn" class="auth-submit-btn">Сохранить изменения</button>
-        </form>
-        <div id="profileMessage" class="auth-message"></div>
     </div>
-</div>
+
+    <!-- Модальное окно заявок (для админов) -->
+    <div id="adminApplicationsModal" class="modal-overlay" hidden>
+        <div class="modal-container" style="max-width: 700px;">
+            <button class="modal-close" id="closeAdminModal">&times;</button>
+            <h2 class="modal-title">Заявки участников</h2>
+            <div id="applicationsList" class="applications-list"></div>
+        </div>
+    </div>
     <!-- Скрипт авторизации -->
     <script src="auth.js"></script>
 </body>

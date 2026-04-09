@@ -8,55 +8,130 @@
         background-attachment: fixed;
     }
 
-    /* ===== НАВИГАЦИЯ ===== */
+    /* ===== НАВИГАЦИЯ (ФИКСИРОВАННАЯ) ===== */
     .nav {
-        padding: 10px 12px;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-        position: relative;
-    }
-    
-    .nav-links {
-        display: none;
-        gap: 8px;
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .nav a {
-        font-size: 13px;
-        padding: 12px 14px;
-        border-radius: 8px;
-        min-height: 44px;
-        display: inline-flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(18, 18, 20, 0.95);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        padding: 8px 16px;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-    }
-    
-    /* Кнопка авторизации на мобильных */
-    #authBtn {
-        position: static;
-        margin-top: 8px;
-        padding: 10px 18px;
-        font-size: 13px;
-        min-height: 44px;
-        width: 100%;
-        max-width: 200px;
-        order: 10;
+        gap: 12px;
+        flex-wrap: nowrap;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    /* ===== КОНТЕЙНЕР ПРАВИЛ ===== */
-    .rules {
-        max-width: 100%;
+    /* Скрываем ссылки навигации */
+    .nav-links {
+        display: none !important;
+    }
+
+    /* Кнопка "Подать заявку" (слева) */
+    .apply-btn {
+        position: static;
+        order: -1;
         margin: 0;
-        padding: 24px 16px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 30px;
+        background: linear-gradient(135deg, #7b2ff7, #b82ff7);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(123, 47, 247, 0.3);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        min-width: auto;
+        width: auto;
+        height: 40px;
+        line-height: 1;
+    }
+
+    .apply-btn:active {
+        transform: scale(0.96);
+        box-shadow: 0 2px 6px rgba(123, 47, 247, 0.4);
+    }
+
+    /* Кнопка авторизации / профиля (справа) */
+    #authBtn {
+        position: static;
+        order: 1;
+        margin: 0;
+        padding: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1.5px solid rgba(255, 255, 255, 0.15);
+        color: white;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        transition: background 0.2s;
+        overflow: hidden;
+        text-indent: -9999px; /* скрываем текст "Войти" */
+        white-space: nowrap;
+    }
+
+    /* Показываем иконку пользователя вместо текста (если не авторизован) */
+    #authBtn::before {
+        content: "\f007"; /* иконка пользователя Font Awesome */
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        text-indent: 0;
+        display: block;
+        font-size: 20px;
+        color: #ddd;
+    }
+
+    /* Если внутри кнопки есть аватар (авторизован), скрываем псевдоэлемент */
+    #authBtn img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        text-indent: 0;
+    }
+
+    #authBtn img ~ ::before {
+        display: none;
+    }
+
+    /* Убираем текст внутри кнопки (например, имя пользователя) */
+    #authBtn span,
+    #authBtn .user-name {
+        display: none;
+    }
+
+    /* Компенсируем фиксированную шапку */
+    .rules {
+        margin-top: 70px; /* высота шапки + отступ */
+        padding-top: 8px;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
         border: none;
         border-radius: 0;
         box-shadow: none;
         background: rgba(12, 12, 14, 0.92);
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-bottom: 24px;
     }
 
-    /* ===== ТИПОГРАФИКА ===== */
+    /* Остальные стили мобильной версии (типографика, контакты и т.д.) */
     .rules h1 { font-size: 26px; margin-bottom: 20px; }
     .rules h2 { font-size: 20px; margin-top: 32px; margin-bottom: 12px; padding-bottom: 6px; }
     .rules h3 { font-size: 17px; margin-top: 22px; margin-bottom: 6px; }
@@ -66,9 +141,9 @@
     .footer-note { margin-top: 32px; padding-top: 16px; }
     .motto { font-size: 16px; margin-top: 16px; }
 
-    section[id] { scroll-margin-top: 70px; }
+    section[id] { scroll-margin-top: 80px; }
 
-    /* ===== ФУТЕР И КОНТАКТЫ ===== */
+    /* Футер */
     .footer { padding: 24px 0; }
     .contacts {
         flex-direction: column;
@@ -86,101 +161,43 @@
     }
     .contact-avatar { width: 44px; height: 44px; }
     .contact-nick { font-size: 15px; }
-    
-    /* ===== МОДАЛЬНОЕ ОКНО НА МОБИЛЬНЫХ ===== */
+
+    /* Модалки */
     .modal-container {
         margin: 10px;
         padding: 24px 20px;
         max-width: calc(100% - 20px);
         border-radius: 20px;
     }
-    
     .modal-close {
         top: 12px;
         right: 16px;
         font-size: 32px;
     }
-    
-    .modal-tabs {
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-    }
-    
-    .tab-btn {
-        padding: 12px 14px;
-        font-size: 13px;
-        min-height: 44px;
-    }
-    
     .auth-form input {
         padding: 14px 16px;
         font-size: 16px;
         min-height: 48px;
     }
-    
-    .submit-btn, .logout-btn {
+    .auth-submit-btn {
         padding: 16px;
         font-size: 16px;
         min-height: 52px;
     }
-    
     .auth-message {
         font-size: 13px;
         padding: 12px 14px;
     }
-    
     .user-panel {
         padding: 14px;
     }
-    
     .user-panel p {
         font-size: 14px;
         margin-bottom: 10px;
     }
-}
-/* ===== КНОПКА ЗАЯВКИ НА МОБИЛЬНЫХ ===== */
-.apply-btn {
-    position: static;
-    order: -10;
-    margin-bottom: 8px;
-    width: 100%;
-    max-width: 240px;
-    min-height: 44px;
-    font-size: 14px;
-}
 
-/* ===== АДАПТАЦИЯ МОДАЛОК И СПИСКОВ ===== */
-.applications-list { max-height: 60vh; }
-#toast-container { top: 10px; right: 10px; left: 10px; }
-.toast { width: 100%; text-align: center; }
-
-@media (max-width: 768px) {
-    .modal-container {
-        width: 96%;
-        max-height: 85vh;
-        padding: 20px 14px;
-        margin: 0 auto;
-    }
-    .modal-title { font-size: 22px; margin-bottom: 12px; }
-    .apply-note { font-size: 12px; padding: 8px; line-height: 1.4; }
-    
-    /* Предотвращает авто-зум при фокусе на iOS */
-    .auth-form input,
-    .auth-form textarea {
-        font-size: 16px !important;
-        min-height: 48px;
-        padding: 12px 14px;
-        border-radius: 10px;
-    }
-    
-    .auth-form textarea { min-height: 80px; }
-    
-    .auth-submit-btn {
-        min-height: 52px;
-        font-size: 15px;
-        border-radius: 30px;
-    }
-    
-    /* Исправление отступов для кнопки закрытия */
-    .modal-close { top: 10px; right: 10px; font-size: 26px; }
+    /* Список заявок */
+    .applications-list { max-height: 60vh; }
+    #toast-container { top: 10px; right: 10px; left: 10px; }
+    .toast { width: 100%; text-align: center; }
 }

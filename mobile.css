@@ -18,6 +18,7 @@
     }
     
     .nav-links {
+        display: none;
         gap: 8px;
         justify-content: center;
         width: 100%;

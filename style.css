@@ -404,6 +404,16 @@ section[id] {
     border: none;
     cursor: pointer;
     font-weight: 600;
+    /* Фикс: когда нет аватара — убираем лишние отступы */
+    justify-content: center;
+    padding: 6px 12px;
+}
+
+/* Когда есть аватар (класс logged-in) — выравниваем по левому краю */
+#authBtn.logged-in {
+    justify-content: flex-start;
+    padding-left: 8px;
+    padding-right: 12px;
 }
 
 .user-avatar-circle {
@@ -418,11 +428,19 @@ section[id] {
     font-weight: bold;
     font-size: 14px;
     text-transform: uppercase;
+    flex-shrink: 0; /* Чтобы аватар не сжимался */
 }
 
 .user-name-text {
     color: rgba(255, 255, 255, 0.9);
     font-size: 14px;
+    line-height: 1;
+}
+
+/* Скрываем имя, если нет аватара (неавторизованный пользователь) */
+#authBtn:not(.logged-in) .user-avatar-circle,
+#authBtn:not(.logged-in) .user-name-text {
+    display: none;
 }
 
 #authBtn.logged-in:hover .user-name-text {
